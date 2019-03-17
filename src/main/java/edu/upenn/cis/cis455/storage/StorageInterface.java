@@ -25,7 +25,7 @@ public interface StorageInterface {
 	/**
 	 * Adds a user and returns an ID
 	 */
-	public int addUser(String username, String password);
+	public int addUser(String username, String firstName, String lastName, String password);
 	
 	/**
 	 * Tries to log in the user, or else throws a HaltException

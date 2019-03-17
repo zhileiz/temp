@@ -93,8 +93,13 @@ public class Crawler implements CrawlMaster {
         String envPath = args[1];
         Integer size = Integer.valueOf(args[2]);
         Integer count = args.length == 4 ? Integer.valueOf(args[3]) : 100;
-        
-        StorageInterface db = StorageFactory.getDatabaseInstance(envPath);
+
+        StorageInterface db = null;
+        try {
+            db = StorageFactory.getDatabaseInstance(envPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         
         Crawler crawler = new Crawler(startUrl, db, size, count);
         

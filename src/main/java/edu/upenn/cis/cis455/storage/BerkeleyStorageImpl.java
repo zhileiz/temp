@@ -7,6 +7,10 @@ import edu.upenn.cis.cis455.model.UserData;
 import edu.upenn.cis.cis455.model.UserKey;
 
 import java.io.FileNotFoundException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 public class BerkeleyStorageImpl implements StorageInterface {
@@ -43,9 +47,10 @@ public class BerkeleyStorageImpl implements StorageInterface {
 
     @Override
     public int addUser(String username, String firstName, String lastName, String password) {
-        TransactionAddUser transaction = new TransactionAddUser(username, firstName, lastName, password);
-        try { runner.run(transaction); }
-        catch (Exception e) {
+        try {
+            TransactionAddUser transaction = new TransactionAddUser(username, firstName, lastName, encrypt(password));
+            runner.run(transaction);
+        } catch (Exception e) {
             e.printStackTrace();
             return -1;
         }
@@ -54,9 +59,10 @@ public class BerkeleyStorageImpl implements StorageInterface {
 
     @Override
     public boolean getSessionForUser(String username, String password) {
-        TransactionAuthenticateUser transaction = new TransactionAuthenticateUser(username, password);
-        try { runner.run(transaction); }
-        catch (Exception e) {
+        try {
+            TransactionAuthenticateUser transaction = new TransactionAuthenticateUser(username, encrypt(password));
+            runner.run(transaction);
+        } catch (Exception e) {
             System.out.println(e.getMessage());
             return false;
         }
@@ -139,5 +145,16 @@ public class BerkeleyStorageImpl implements StorageInterface {
     private class UserAlreadyExistException extends Exception {
         @Override
         public String getMessage() { return "User Already Exist!"; }
+    }
+
+    /*************************************
+     * PRIVATE: SHA-256 Hashing Function *
+     *************************************/
+
+    private String encrypt(String rawPassword) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(rawPassword.getBytes(StandardCharsets.UTF_8));
+        byte[] digest = md.digest();
+        return String.format("%064x", new BigInteger(1, digest));
     }
 }

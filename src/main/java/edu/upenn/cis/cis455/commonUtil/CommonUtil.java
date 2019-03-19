@@ -27,7 +27,6 @@ public class CommonUtil {
         byte[] digest = md.digest();
         String hashtext = (new BigInteger(1,digest)).toString(16);
         StringBuilder sb = new StringBuilder(hashtext);
-        while(hashtext.length() < 32 ){ sb.insert(0, "0"); }
         return sb.toString();
     }
 

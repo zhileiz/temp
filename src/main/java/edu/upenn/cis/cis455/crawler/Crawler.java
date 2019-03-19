@@ -5,12 +5,16 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import edu.upenn.cis.cis455.commonUtil.CommonUtil;
 import edu.upenn.cis.cis455.crawler.crawler.CrawlerUrlQueue;
 import edu.upenn.cis.cis455.crawler.crawler.CrawlerWorker;
 import edu.upenn.cis.cis455.crawler.info.RobotsTxtInfo;
@@ -30,7 +34,7 @@ public class Crawler implements CrawlMaster {
 
     CrawlerUrlQueue urlQueue;
     HashMap<String, RobotsTxtInfo> robotsInfo;
-    HashMap<String, Date> lastVisitedTimes;
+    HashMap<String, LocalDateTime> lastVisitedTimes;
     CrawlerWorker[] workers;
     StorageInterface db;
 
@@ -47,13 +51,13 @@ public class Crawler implements CrawlMaster {
         this.lastVisitedTimes = new HashMap<>();
         URLInfo initialUrl = new URLInfo(startUrl);
         initializeRobotsInfo(initialUrl);
-        initializeThreadPool(initialUrl, 2);
+        initializeThreadPool(initialUrl, NUM_WORKERS);
     }
 
     private void initializeThreadPool(URLInfo initialUrl, int numWorkers) {
         urlQueue = new CrawlerUrlQueue();
         urlQueue.add(initialUrl);
-        workers = new CrawlerWorker[2];
+        workers = new CrawlerWorker[numWorkers];
         for (int i = 0; i < numWorkers; i++) {
             workers[i] = new CrawlerWorker(this, db, urlQueue);
         }
@@ -94,9 +98,8 @@ public class Crawler implements CrawlMaster {
             ArrayList<String> disallowed = robot.getDisallowedLinks(USER_AGENT);
             if (disallowed == null) { disallowed = robot.getDisallowedLinks(USER_AGENT_ALL); }
             if (disallowed != null) {
-                System.out.println("");
                 for (String path : disallowed) {
-                    if (info.getFilePath().startsWith(path)) {
+                    if (info.getFilePath().startsWith(cleanPath(path))) {
                         System.out.println("DISALLOWED '" + path + "' by '" + info.getFilePath() + "'");
                         return false;
                     }
@@ -104,8 +107,16 @@ public class Crawler implements CrawlMaster {
             } else {
                 System.out.println("NO USER AGENT FOUND!");
             }
-
             return true;
+        }
+    }
+
+    private String cleanPath(String path) {
+        if (path.length() < 2)  { return path; }
+        if (path.substring(path.length() - 1, path.length()).equals("/")) {
+            return path.substring(0, path.length()-1);
+        } else {
+            return path;
         }
     }
 
@@ -113,7 +124,29 @@ public class Crawler implements CrawlMaster {
      * Returns true if the crawl delay says we should wait
      */
     @Override
-    public boolean deferCrawl(String site) { return false; }
+    public boolean deferCrawl(String site) {
+        synchronized (lastVisitedTimes) {
+            LocalDateTime last = lastVisitedTimes.get(site);
+            LocalDateTime now = LocalDateTime.now();
+            if (last == null) {
+                lastVisitedTimes.put(site, now);
+                return false;
+            } else {
+                RobotsTxtInfo robot = robotsInfo.get(site);
+                long delay = robot.getCrawlDelay(USER_AGENT);
+                if (delay < 0) { delay = robot.getCrawlDelay(USER_AGENT_ALL); }
+                LocalDateTime temp = LocalDateTime.from(last);
+                now = LocalDateTime.now();
+                long timeElapsed = temp.until(now, ChronoUnit.SECONDS);
+                if (timeElapsed < 1) { return true; }
+                else {
+                    System.out.println("[ ALLOWING ] " + site);
+                    lastVisitedTimes.put(site, now);
+                    return false;
+                }
+            }
+        }
+    }
     
     /**
      * Returns true if it's permissible to fetch the content,
@@ -258,7 +291,7 @@ public class Crawler implements CrawlMaster {
 //            System.exit(1);
 //        }
         args = new String[4];
-        args[0] = "https://dbappserv.cis.upenn.edu";
+        args[0] = "https://dbappserv.cis.upenn.edu/crawltest.html";
         args[1] = "./berkeleyDB";
         args[2] = "0";
         args[3] = "0";

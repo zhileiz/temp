@@ -30,7 +30,8 @@ public class Constants {
     }
 
     public class HTTPHeaders {
-        public static final String IF_MODIFIED_SINCE="If-Modified-Since";
-        public static final String DATE="Date";
+        public static final String IF_MODIFIED_SINCE = "If-Modified-Since";
+        public static final String DATE = "Date";
+        public static final String CONTENT_TYPE = "Content-Type";
     }
 }

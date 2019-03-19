@@ -15,8 +15,13 @@ public class CrawlerUrlQueue {
     }
 
     public synchronized void add(URLInfo urlInfo) {
+        System.out.println("[ADDED:]" + urlInfo.getRawUrl());
         queue.add(urlInfo);
         this.notifyAll();
+    }
+
+    public synchronized URLInfo peek() {
+        return queue.peek();
     }
 
     public boolean isEmpty() {
@@ -26,6 +31,10 @@ public class CrawlerUrlQueue {
     public void exit() {
         this.shouldWait = false;
         this.notifyAll();
+    }
+
+    public URLInfo nonBlockPoll() {
+        return queue.poll();
     }
 
     public synchronized URLInfo poll() {

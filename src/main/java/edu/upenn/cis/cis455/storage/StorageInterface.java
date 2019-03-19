@@ -10,7 +10,7 @@ public interface StorageInterface {
 	/**
 	 * Add a new document, getting its ID
 	 */
-	public int addDocument(String url, String documentContents);
+	public int addDocument(String url, String documentContents, String date);
 	
 	/**
 	 * How many keywords so far?
@@ -35,7 +35,7 @@ public interface StorageInterface {
 	/**
 	 * Retrieves a document's contents by URL
 	 */
-	public String getDocument(String url);
+	public Object getDocument(String url);
 	
 	/**
 	 * Shuts down / flushes / closes the storage system

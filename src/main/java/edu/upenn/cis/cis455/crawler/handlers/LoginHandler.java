@@ -5,10 +5,9 @@ import spark.Request;
 import spark.Route;
 import spark.Response;
 import spark.HaltException;
-import spark.Session;
 import edu.upenn.cis.cis455.storage.StorageInterface;
 
-import static edu.upenn.cis.cis455.crawler.Constants.USER_SESSION_ID;
+import static edu.upenn.cis.cis455.crawler.utils.Constants.USER_SESSION_ID;
 
 public class LoginHandler implements Route {
 

@@ -1,6 +1,6 @@
 package edu.upenn.cis.cis455.crawler.handlers;
 
-import edu.upenn.cis.cis455.crawler.Constants;
+import edu.upenn.cis.cis455.crawler.utils.Constants;
 import spark.Request;
 import spark.Response;
 import spark.Route;

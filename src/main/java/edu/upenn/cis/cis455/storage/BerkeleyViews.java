@@ -11,6 +11,7 @@ public class BerkeleyViews {
 
     private StoredSortedMap userMap;
     private StoredSortedMap documentMap;
+    private StoredSortedMap contentSeenMap;
 
     public BerkeleyViews(BerkeleyDatabase db)
     {
@@ -19,9 +20,12 @@ public class BerkeleyViews {
         EntryBinding userDataBinding = new SerialBinding(catalog, UserData.class);
         EntryBinding documentKeyBinding = new SerialBinding(catalog, DocumentKey.class);
         EntryBinding documentDataBinding = new SerialBinding(catalog, DocumentData.class);
+        EntryBinding contentSeenKeyBinding = new SerialBinding(catalog, ContentHashKey.class);
+        EntryBinding contentSeenDataBinding = new SerialBinding(catalog, ContentHashData.class);
 
         userMap = new StoredSortedMap(db.getUserDatabase(), userKeyBinding, userDataBinding, true);
         documentMap = new StoredSortedMap(db.getDocumentDatabase(), documentKeyBinding, documentDataBinding, true);
+        contentSeenMap = new StoredSortedMap(db.getContentSeenDb(), contentSeenKeyBinding, contentSeenDataBinding, true);
     }
 
     public final StoredSortedMap getUserMap() {
@@ -30,6 +34,10 @@ public class BerkeleyViews {
 
     public final StoredSortedMap getDocumentMap() {
         return documentMap;
+    }
+
+    public StoredSortedMap getContentSeenMap() {
+        return contentSeenMap;
     }
 
     public final StoredEntrySet getUserEntrySet() {

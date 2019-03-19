@@ -7,7 +7,7 @@ public interface CrawlMaster {
      * Returns true if it's permissible to access the site right now
      * eg due to robots, etc.
      */
-    public boolean isOKtoCrawl(String site, int port, boolean isSecure);
+    public boolean isOKtoCrawl(URLInfo urlInfo);
 
     /**
      * Returns true if the crawl delay says we should wait
@@ -47,4 +47,6 @@ public interface CrawlMaster {
      * knows when it can shut down
      */
     public void notifyThreadExited();
+
+    public void shutDown();
 }

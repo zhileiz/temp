@@ -4,6 +4,7 @@ public class URLInfo {
 	private String hostName;
 	private int portNo;
 	private String filePath;
+	private String rawUrl;
 	
 	private boolean isSecure = false;
 	
@@ -14,10 +15,10 @@ public class URLInfo {
 		if(docURL == null || docURL.equals(""))
 			return;
 		docURL = docURL.trim();
-		
+		rawUrl = docURL;
 		if (docURL.startsWith("https://")) {
 		    this.isSecure = true;
-		    docURL.replaceFirst("https:", "http:");
+            docURL = docURL.replaceFirst("https:", "http:");
 		}
 		
 		if(!docURL.startsWith("http://") || docURL.length() < 8)
@@ -54,6 +55,15 @@ public class URLInfo {
 			portNo = 80;
 		}
 	}
+
+	public String getRawUrl() {
+	    return this.rawUrl;
+    }
+
+    public String getHostURL() {
+	    String prefix = isSecure ? "https://" : "http://";
+	    return prefix + hostName;
+    }
 	
 	public URLInfo(String hostName, String filePath){
 		this.hostName = hostName;

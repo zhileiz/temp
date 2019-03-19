@@ -1,6 +1,6 @@
 package edu.upenn.cis.cis455.crawler.handlers;
 
-import edu.upenn.cis.cis455.crawler.Constants;
+import edu.upenn.cis.cis455.crawler.utils.Constants;
 import edu.upenn.cis.cis455.model.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

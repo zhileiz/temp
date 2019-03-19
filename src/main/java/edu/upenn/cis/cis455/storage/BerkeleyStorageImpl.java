@@ -3,15 +3,12 @@ package edu.upenn.cis.cis455.storage;
 import com.sleepycat.collections.TransactionRunner;
 import com.sleepycat.collections.TransactionWorker;
 import com.sleepycat.je.DatabaseException;
-import edu.upenn.cis.cis455.model.UserData;
-import edu.upenn.cis.cis455.model.UserKey;
+import edu.upenn.cis.cis455.model.*;
 
 import java.io.FileNotFoundException;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Map;
+
+import static edu.upenn.cis.cis455.commonUtil.CommonUtil.*;
 
 public class BerkeleyStorageImpl implements StorageInterface {
 
@@ -27,12 +24,28 @@ public class BerkeleyStorageImpl implements StorageInterface {
 
     @Override
     public int getCorpusSize() {
-        return 0;
+        try {
+            runner.run(() -> {
+                throw new CountDocumentResponse(views.getDocumentMap().size());
+            });
+        } catch (Exception res) {
+            if (res instanceof CountDocumentResponse) {
+                return ((CountDocumentResponse) res).count;
+            }
+        }
+        return -1;
     }
 
     @Override
-    public int addDocument(String url, String documentContents) {
-        return 0;
+    public int addDocument(String url, String documentContents, String date) {
+        try {
+            TransactionAddDocument transaction = new TransactionAddDocument(url, documentContents, date);
+            runner.run(transaction);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+        return 1;
     }
 
     @Override
@@ -70,12 +83,69 @@ public class BerkeleyStorageImpl implements StorageInterface {
     }
 
     @Override
-    public String getDocument(String url) {
+    public Object getDocument(String url) {
+        try {
+            TransactionGetDocument transaction = new TransactionGetDocument(url);
+            runner.run(transaction);
+        } catch (Exception res) {
+            if (res instanceof GetDocumentResponse) {
+                return ((GetDocumentResponse) res).doc;
+            }
+        }
         return null;
     }
 
     @Override
     public void close() { db.close(); }
+
+    /**********************************
+     * PRIVATE: DOCUMENT Transactions *
+     **********************************/
+
+    private class TransactionAddDocument implements TransactionWorker {
+        private String url, content, date;
+
+        public TransactionAddDocument(String url, String content, String date) {
+            this.url = url; this.content = content; this.date = date;
+        }
+
+        @Override
+        public void doWork() throws Exception {
+            Map documents = views.getDocumentMap();
+            Map contentSeen = views.getContentSeenMap();
+            DocumentKey docKey = new DocumentKey(url);
+            if (documents.containsKey(docKey)) {
+                DocumentData oldDoc = (DocumentData) documents.get(docKey);
+                contentSeen.remove(new ContentHashKey(oldDoc.getMd5Hash()));
+            }
+            String md5 = getMD5(content);
+            contentSeen.put(new ContentHashKey(md5), new ContentHashData(url));
+            documents.put(docKey, new DocumentData(md5, content, date));
+        }
+    }
+
+    private class TransactionGetDocument implements TransactionWorker {
+        private String url;
+        public TransactionGetDocument(String url) { this.url = url; }
+        @Override
+        public void doWork() throws Exception {
+            Map documents = views.getDocumentMap();
+            DocumentData doc = (DocumentData) documents.get(new DocumentKey(url));
+            throw new GetDocumentResponse(doc);
+        }
+    }
+
+    private class GetDocumentResponse extends Exception {
+        public DocumentData doc;
+        public GetDocumentResponse(DocumentData doc) { this.doc = doc; }
+    }
+
+    private class CountDocumentResponse extends Exception {
+        public int count;
+        public CountDocumentResponse(int count) { this.count = count; }
+    }
+
+
 
     /******************************
      * PRIVATE: USER Transactions *
@@ -145,16 +215,5 @@ public class BerkeleyStorageImpl implements StorageInterface {
     private class UserAlreadyExistException extends Exception {
         @Override
         public String getMessage() { return "User Already Exist!"; }
-    }
-
-    /*************************************
-     * PRIVATE: SHA-256 Hashing Function *
-     *************************************/
-
-    private String encrypt(String rawPassword) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-        md.update(rawPassword.getBytes(StandardCharsets.UTF_8));
-        byte[] digest = md.digest();
-        return String.format("%064x", new BigInteger(1, digest));
     }
 }

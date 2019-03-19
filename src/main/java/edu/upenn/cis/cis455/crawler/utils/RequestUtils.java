@@ -1,6 +1,5 @@
 package edu.upenn.cis.cis455.crawler.utils;
 
-import edu.upenn.cis.cis455.crawler.Constants;
 import edu.upenn.cis.cis455.model.User;
 import spark.Request;
 

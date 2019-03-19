@@ -25,11 +25,9 @@ public class RobotsTxtInfo {
 			ArrayList<String> temp = new ArrayList<String>();
 			temp.add(value);
 			disallowedLinks.put(key, temp);
-		}
-		else{
+		} else{
 			ArrayList<String> temp = disallowedLinks.get(key);
-			if(temp == null)
-				temp = new ArrayList<String>();
+			if(temp == null) { temp = new ArrayList<String>(); }
 			temp.add(value);
 			disallowedLinks.put(key, temp);
 		}

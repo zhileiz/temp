@@ -1,27 +1,68 @@
 package edu.upenn.cis.cis455.crawler;
 
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import edu.upenn.cis.cis455.crawler.crawler.CrawlerUrlQueue;
+import edu.upenn.cis.cis455.crawler.crawler.CrawlerWorker;
 import edu.upenn.cis.cis455.crawler.info.RobotsTxtInfo;
 import edu.upenn.cis.cis455.crawler.info.URLInfo;
+import edu.upenn.cis.cis455.crawler.utils.CrawlerUtils;
 import edu.upenn.cis.cis455.storage.StorageFactory;
 import edu.upenn.cis.cis455.storage.StorageInterface;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 
 public class Crawler implements CrawlMaster {
     static final int NUM_WORKERS = 10;
+    static final String USER_AGENT = "cis455crawler";
+    static final String USER_AGENT_ALL = "*";
+
+
+    CrawlerUrlQueue urlQueue;
+    HashMap<String, RobotsTxtInfo> robotsInfo;
+    HashMap<String, Date> lastVisitedTimes;
+    CrawlerWorker[] workers;
+    StorageInterface db;
+
+    int maxContentLength;
+    int maxDocumentCount;
+    int activeWorkerCount;
+    int threadCount;
+    boolean hasStarted;
 
     public Crawler(String startUrl, StorageInterface db, int size, int count) {
-        // TODO: initialize
+        this.db = db;
+        this.maxContentLength = size;
+        this.maxDocumentCount = count;
+        this.lastVisitedTimes = new HashMap<>();
+        URLInfo initialUrl = new URLInfo(startUrl);
+        initializeRobotsInfo(initialUrl);
+        initializeThreadPool(initialUrl, 2);
+    }
+
+    private void initializeThreadPool(URLInfo initialUrl, int numWorkers) {
+        urlQueue = new CrawlerUrlQueue();
+        urlQueue.add(initialUrl);
+        workers = new CrawlerWorker[2];
+        for (int i = 0; i < numWorkers; i++) {
+            workers[i] = new CrawlerWorker(this, db, urlQueue);
+        }
+    }
+
+    private void initializeRobotsInfo(URLInfo initialUrl) {
+        robotsInfo = new HashMap<>();
+        RobotsTxtInfo initialInfo = CrawlerUtils.getRobotsInfo(initialUrl);
+        robotsInfo.put(initialUrl.getHostName(), initialInfo);
     }
 
     ///// TODO: you'll need to flesh all of this out.  You'll need to build a thread
@@ -31,92 +72,197 @@ public class Crawler implements CrawlMaster {
     /**
      * Main thread
      */
-    public void start() {}
+    public void start() {
+        for (int i = 0; i < workers.length; i++) {
+            workers[i].start();
+        }
+        this.threadCount = workers.length;
+        this.hasStarted = true;
+    }
     
     /**
      * Returns true if it's permissible to access the site right now
      * eg due to robots, etc.
      */
-    public boolean isOKtoCrawl(String site, int port, boolean isSecure) { return true; }
+    @Override
+    public boolean isOKtoCrawl(URLInfo info) {
+        synchronized (robotsInfo) {
+            if (robotsInfo.get(info.getHostName()) == null) {
+                robotsInfo.put(info.getHostName(), CrawlerUtils.getRobotsInfo(info));
+            }
+            RobotsTxtInfo robot = robotsInfo.get(info.getHostName());
+            ArrayList<String> disallowed = robot.getDisallowedLinks(USER_AGENT);
+            if (disallowed == null) { disallowed = robot.getDisallowedLinks(USER_AGENT_ALL); }
+            if (disallowed != null) {
+                System.out.println("");
+                for (String path : disallowed) {
+                    if (info.getFilePath().startsWith(path)) {
+                        System.out.println("DISALLOWED '" + path + "' by '" + info.getFilePath() + "'");
+                        return false;
+                    }
+                }
+            } else {
+                System.out.println("NO USER AGENT FOUND!");
+            }
+
+            return true;
+        }
+    }
 
     /**
      * Returns true if the crawl delay says we should wait
      */
+    @Override
     public boolean deferCrawl(String site) { return false; }
     
     /**
      * Returns true if it's permissible to fetch the content,
      * eg that it satisfies the path restrictions from robots.txt
      */
+    @Override
     public boolean isOKtoParse(URLInfo url) { return true; }
     
     /**
      * Returns true if the document content looks worthy of indexing,
      * eg that it doesn't have a known signature
      */
+    @Override
     public boolean isIndexable(String content) { return true; }
     
     /**
      * We've indexed another document
      */
+    @Override
     public void incCount() { }
     
     /**
      * Workers can poll this to see if they should exit, ie the
      * crawl is done
      */
-    public boolean isDone() { return true; }
+    @Override
+    public boolean isDone() {
+        if (hasStarted) {
+            return urlQueue.isEmpty() && activeWorkerCount == 0;
+        }
+        return false;
+    }
     
     /**
      * Workers should notify when they are processing an URL
      */
-    public void setWorking(boolean working) {}
-    
+    @Override
+    public void setWorking(boolean working) {
+        synchronized (this) {
+            if (working) {
+                activeWorkerCount++;
+            }
+            else {
+                activeWorkerCount--;
+            }
+        }
+    }
+
+    public int getActiveWorkerCount() {
+        return activeWorkerCount;
+    }
+
     /**
      * Workers should call this when they exit, so the master
      * knows when it can shut down
      */
-    public void notifyThreadExited() {}
-    
+    @Override
+    public void notifyThreadExited() {
+        synchronized (this) {
+            threadCount --;
+        }
+    }
+
+    @Override
+    public void shutDown() {
+        System.out.println("[ShutDOWN!] - shutting down");
+        synchronized (urlQueue) {
+            urlQueue.exit();
+        }
+        while (threadCount != 0) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        db.close();
+    }
+
     /**
      * Main program:  init database, start crawler, wait
      * for it to notify that it is done, then close.
      */
     public static void main(String args[]) {
-        if (args.length < 3 || args.length > 5) {
-            System.out.println("Usage: Crawler {start URL} {database environment path} {max doc size in MB} {number of files to index}");
-            System.exit(1);
-        }
-        
-        System.out.println("Crawler starting");
+        args = checkArgs(args);
         String startUrl = args[0];
         String envPath = args[1];
         Integer size = Integer.valueOf(args[2]);
         Integer count = args.length == 4 ? Integer.valueOf(args[3]) : 100;
 
-        StorageInterface db = null;
-        try {
-            db = StorageFactory.getDatabaseInstance(envPath);
-        } catch (Exception e) {
-            e.printStackTrace();
+        createDBDirectory(envPath);
+        StorageInterface db = getDB(envPath);
+
+        args = checkArgs(args);
+        createDBDirectory(args[1]);
+        StorageInterface database = getDB(args[1]);
+        if (database == null) {
+            System.out.println("Cannot Instantiate Database");
+            System.exit(1);
         }
         
         Crawler crawler = new Crawler(startUrl, db, size, count);
-        
-        System.out.println("Starting crawl of " + count + " documents, starting at " + startUrl);
         crawler.start();
-        
-        while (!crawler.isDone())
+
+        while (!crawler.isDone()) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            
-        // TODO: final shutdown
+        }
+
+        crawler.shutDown();
+//
+//        // TODO: final shutdown
             
         System.out.println("Done crawling!");
+    }
+
+    private static StorageInterface getDB(String dbName) {
+        try {
+            return StorageFactory.getDatabaseInstance(dbName);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static void createDBDirectory(String dirName) {
+        if (!Files.exists(Paths.get(dirName))) {
+            try {
+                Files.createDirectory(Paths.get(dirName));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static String[] checkArgs(String[] args) {
+//        if (args.length < 3 || args.length > 5) {
+//            System.out.println("Usage: Crawler {start URL} {database environment path} {max doc size in MB} {number of files to index}");
+//            System.exit(1);
+//        }
+        args = new String[4];
+        args[0] = "https://dbappserv.cis.upenn.edu";
+        args[1] = "./berkeleyDB";
+        args[2] = "0";
+        args[3] = "0";
+        return args;
     }
 
 }

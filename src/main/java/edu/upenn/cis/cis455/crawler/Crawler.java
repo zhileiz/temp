@@ -295,15 +295,13 @@ public class Crawler implements CrawlMaster {
     }
 
     private static String[] checkArgs(String[] args) {
-//        if (args.length < 3 || args.length > 5) {
-//            logger.debug("Usage: Crawler {start URL} {database environment path} {max doc size in MB} {number of files to index}");
-//            System.exit(1);
-//        }
-        args = new String[4];
-        args[0] = "https://dbappserv.cis.upenn.edu/crawltest.html";
-        args[1] = "./berkeleyDB";
-        args[2] = "11";
-        args[3] = "1000";
+        if (args.length < 3 || args.length > 5) {
+            args = new String[4];
+            args[0] = "https://dbappserv.cis.upenn.edu/crawltest.html";
+            args[1] = "./berkeleyDB";
+            args[2] = "11";
+            args[3] = "1000";
+        }
         return args;
     }
 

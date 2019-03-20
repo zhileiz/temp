@@ -2,6 +2,8 @@ package edu.upenn.cis.cis455.crawler.handlers;
 
 import edu.upenn.cis.cis455.model.User;
 import edu.upenn.cis.cis455.storage.StorageInterface;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import spark.Request;
 import spark.Response;
 import spark.Route;
@@ -9,7 +11,10 @@ import static edu.upenn.cis.cis455.crawler.utils.RequestUtils.*;
 
 public class RegisterHandler implements Route {
 
+    Logger logger = LogManager.getLogger(RegisterHandler.class);
+
     StorageInterface db;
+    private String firstName;
 
     public RegisterHandler(StorageInterface db) { this.db = db; }
 
@@ -19,7 +24,7 @@ public class RegisterHandler implements Route {
         String lastName = req.queryParams("lastName");
         String username = req.queryParams("username");
         String password = req.queryParams("password");
-        System.out.println("REGISTER: received " + firstName + " " + lastName + " " + username + " " + password);
+        logger.debug("REGISTER: received " + firstName + " " + lastName + " " + username + " " + password);
         if (firstName == null || lastName == null || username == null || password == null) {
             res.redirect("/register");
         } else {

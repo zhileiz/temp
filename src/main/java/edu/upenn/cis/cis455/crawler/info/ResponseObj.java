@@ -1,6 +1,8 @@
 package edu.upenn.cis.cis455.crawler.info;
 
 import edu.upenn.cis.cis455.crawler.utils.Constants;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,6 +17,8 @@ public class ResponseObj {
     private int responseCode;
     private String responseMessage;
     private String content;
+
+    Logger logger = LogManager.getLogger(ResponseObj.class);
 
     public ResponseObj(HttpURLConnection conn) {
         this.headers = conn.getHeaderFields();

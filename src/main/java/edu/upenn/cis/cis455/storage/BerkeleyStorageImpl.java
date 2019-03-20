@@ -4,13 +4,20 @@ import com.sleepycat.collections.TransactionRunner;
 import com.sleepycat.collections.TransactionWorker;
 import com.sleepycat.je.DatabaseException;
 import edu.upenn.cis.cis455.model.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import static edu.upenn.cis.cis455.commonUtil.CommonUtil.*;
 
 public class BerkeleyStorageImpl implements StorageInterface {
+
+    Logger logger = LogManager.getLogger(BerkeleyStorageImpl.class);
 
     private BerkeleyDatabase db;
     private BerkeleyViews views;
@@ -76,7 +83,7 @@ public class BerkeleyStorageImpl implements StorageInterface {
             TransactionAuthenticateUser transaction = new TransactionAuthenticateUser(username, encrypt(password));
             runner.run(transaction);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            logger.debug(e.getMessage());
             return false;
         }
         return true;
@@ -93,6 +100,23 @@ public class BerkeleyStorageImpl implements StorageInterface {
             }
         }
         return null;
+    }
+
+    @Override
+    public List<String> getAllDocumentURLs() {
+        List<String> list = new ArrayList<>();
+        try {
+            runner.run(() -> {
+                Iterator it = views.getDocumentEntrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry entry = (Map.Entry) it.next();
+                    list.add(((DocumentKey)entry.getKey()).getUrl());
+                }
+            });
+        } catch (Exception e) {
+            logger.debug(e);
+        }
+        return list;
     }
 
     @Override

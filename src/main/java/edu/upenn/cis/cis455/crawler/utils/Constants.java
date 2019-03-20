@@ -9,6 +9,7 @@ public class Constants {
         public static final String MAIN_PAGE = "/welcome";
         public static final String LOGIN = "/login";
         public static final String LOGOUT = "/logout";
+        public static final String LOOKUP = "/lookup";
     }
 
     public class Pages {

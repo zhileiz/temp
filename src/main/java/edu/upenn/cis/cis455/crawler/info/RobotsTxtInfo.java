@@ -1,5 +1,8 @@
 package edu.upenn.cis.cis455.crawler.info;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -11,6 +14,8 @@ public class RobotsTxtInfo {
 	private HashMap<String,Integer> crawlDelays;
 	private ArrayList<String> sitemapLinks;
 	private ArrayList<String> userAgents;
+
+    Logger logger = LogManager.getLogger(RobotsTxtInfo.class);
 	
 	public RobotsTxtInfo(){
 		disallowedLinks = new HashMap<String,ArrayList<String>>();
@@ -80,23 +85,22 @@ public class RobotsTxtInfo {
 	
 	public void print(){
 		for(String userAgent:userAgents){
-			System.out.println("User-Agent: "+userAgent);
+			logger.debug("User-Agent: "+userAgent);
 			ArrayList<String> dlinks = disallowedLinks.get(userAgent);
 			if(dlinks != null)
 				for(String dl:dlinks)
-					System.out.println("Disallow: "+dl);
+					logger.debug("Disallow: "+dl);
 			ArrayList<String> alinks = allowedLinks.get(userAgent);
 			if(alinks != null)
 					for(String al:alinks)
-						System.out.println("Allow: "+al);
+						logger.debug("Allow: "+al);
 			if(crawlDelays.containsKey(userAgent))
-				System.out.println("Crawl-Delay: "+crawlDelays.get(userAgent));
-			System.out.println();
+			    logger.debug("Crawl-Delay: "+crawlDelays.get(userAgent));
 		}
 		if(sitemapLinks.size() > 0){
-			System.out.println("# SiteMap Links");
+			logger.debug("# SiteMap Links");
 			for(String sitemap:sitemapLinks)
-				System.out.println(sitemap);
+				logger.debug(sitemap);
 		}
 	}
 	

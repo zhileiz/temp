@@ -6,6 +6,8 @@ import com.sleepycat.bind.serial.SerialBinding;
 import com.sleepycat.collections.StoredEntrySet;
 import com.sleepycat.collections.StoredSortedMap;
 import edu.upenn.cis.cis455.model.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class BerkeleyViews {
 

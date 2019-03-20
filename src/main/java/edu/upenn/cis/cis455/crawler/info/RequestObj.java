@@ -1,5 +1,8 @@
 package edu.upenn.cis.cis455.crawler.info;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +11,8 @@ public class RequestObj {
 
     String url;
     String method;
+
+    Logger logger = LogManager.getLogger(RequestObj.class);
 
     public class Property{
         String key, value;

@@ -2,6 +2,8 @@ package edu.upenn.cis.cis455.storage;
 
 import com.sleepycat.bind.serial.StoredClassCatalog;
 import com.sleepycat.je.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,6 +12,8 @@ public class BerkeleyDatabase {
     private Environment env;
     private static final String CLASS_CATALOG = "java_class_catalog";
     private StoredClassCatalog javaCatalog;
+
+    Logger logger = LogManager.getLogger(BerkeleyDatabase.class);
 
     private static final String USER_STORE = "user_store";
     private static final String DOCUMENT_STORE = "document_store";
@@ -20,7 +24,7 @@ public class BerkeleyDatabase {
     private Database contentSeenDb;
 
     public BerkeleyDatabase(String homeDirectory) throws DatabaseException, FileNotFoundException {
-        System.out.println("Opening environment in: " + homeDirectory);
+        logger.debug("Opening environment in: " + homeDirectory);
 
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setTransactional(true);

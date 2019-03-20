@@ -1,11 +1,17 @@
 package edu.upenn.cis.cis455.crawler.crawler;
 
+import edu.upenn.cis.cis455.crawler.handlers.RegisterFilter;
 import edu.upenn.cis.cis455.crawler.info.URLInfo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
 
 public class CrawlerUrlQueue {
+
+    Logger logger = LogManager.getLogger(CrawlerUrlQueue.class);
+
     Queue<URLInfo> queue;
     boolean shouldWait;
 
@@ -16,7 +22,7 @@ public class CrawlerUrlQueue {
 
     public synchronized void add(URLInfo urlInfo) {
         if (urlInfo != null) {
-            System.out.println("[" + Thread.currentThread() + "ADDED:]" + urlInfo.getRawUrl());
+            logger.debug("[" + Thread.currentThread() + "ADDED:]" + urlInfo.getRawUrl());
             queue.add(urlInfo);
             this.notifyAll();
         }

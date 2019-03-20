@@ -1,10 +1,13 @@
 package edu.upenn.cis.cis455.crawler.utils;
 
 
+import edu.upenn.cis.cis455.crawler.Crawler;
 import edu.upenn.cis.cis455.crawler.info.RequestObj;
 import edu.upenn.cis.cis455.crawler.info.ResponseObj;
 import edu.upenn.cis.cis455.crawler.info.RobotsTxtInfo;
 import edu.upenn.cis.cis455.crawler.info.URLInfo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -18,6 +21,8 @@ import java.util.Map;
 
 public class CrawlerUtils {
 
+    private static Logger logger = LogManager.getLogger(CrawlerUtils.class);
+
     public static RobotsTxtInfo getRobotsInfo(URLInfo urlInfo) {
         String robotURL = urlInfo.getHostURL() + "/robots.txt";
         RequestObj req = new RequestObj(robotURL, Constants.HTTPMethods.GET);
@@ -27,11 +32,11 @@ public class CrawlerUtils {
 
     public static ResponseObj makeRequest(RequestObj req) {
         try {
-            System.out.println(req.getUrl());
+            logger.debug(req.getUrl());
             HttpURLConnection con = (HttpURLConnection) req.getUrl().openConnection();
             con.setRequestMethod(req.getMethod());
             for (String[] property : req.getProperties()) {
-                System.out.println("REQ PROP: " + property[0] + " : " + property[1]);
+                logger.debug("REQ PROP: " + property[0] + " : " + property[1]);
                 con.setRequestProperty(property[0], property[1]);
             }
             return new ResponseObj(con);
@@ -59,7 +64,7 @@ public class CrawlerUtils {
             }
             return info;
         } catch (Exception e) {
-            System.err.println("Failed to parse Robots.TXT");
+            logger.debug("Failed to parse Robots.TXT");
             return null;
         }
     }

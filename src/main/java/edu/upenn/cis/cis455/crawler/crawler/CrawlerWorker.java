@@ -9,6 +9,8 @@ import edu.upenn.cis.cis455.crawler.utils.Constants;
 import edu.upenn.cis.cis455.crawler.utils.CrawlerUtils;
 import edu.upenn.cis.cis455.model.DocumentData;
 import edu.upenn.cis.cis455.storage.StorageInterface;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -19,6 +21,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class CrawlerWorker extends Thread {
+
+    Logger logger = LogManager.getLogger(CrawlerWorker.class);
 
     private boolean shouldContinue;
     private CrawlMaster master;
@@ -48,7 +52,7 @@ public class CrawlerWorker extends Thread {
         synchronized (queue) {
             URLInfo peekInfo = queue.peek();
             if (peekInfo == null) {
-//                System.out.println("[" + Thread.currentThread() + " Sleeping due to null peakInfo]");
+//                logger.debug("[" + Thread.currentThread() + " Sleeping due to null peakInfo]");
                 throw new ShouldSleepException(1);
             }
             if (!master.isOKtoCrawl(peekInfo)) {
@@ -56,7 +60,7 @@ public class CrawlerWorker extends Thread {
                 return null;
             } else {
                 if (master.deferCrawl(peekInfo.getHostName())) {
-//                    System.out.println("[" + Thread.currentThread() + " Sleeping due to defer..]");
+//                    logger.debug("[" + Thread.currentThread() + " Sleeping due to defer..]");
                     throw new ShouldSleepException(1);
                 } else {
                     return queue.nonBlockPoll();
@@ -82,19 +86,19 @@ public class CrawlerWorker extends Thread {
             URLInfo urlInfo;
             try { urlInfo = getNextInfo(); }
             catch (ShouldSleepException e) {
-//                System.out.println("[" + Thread.currentThread() + " Sleeping..]");
+//                logger.debug("[" + Thread.currentThread() + " Sleeping..]");
                 sleep(e.time); continue;
             }
             if (urlInfo != null) {
                 master.setWorking(true);
-                System.out.println("\n\n===============\n [CRAWLING By" + Thread.currentThread() + "...]" + urlInfo.getRawUrl());
+                logger.debug("\n\n===============\n [CRAWLING By" + Thread.currentThread() + "...]" + urlInfo.getRawUrl());
                 try {
                     /* Check and Crawl */
                     String[] newDoc = headOrGet(urlInfo);
                     /* Parse New Document and save */
                     parseAndSave(newDoc, urlInfo);
                 } catch (ShouldSkipException e) {
-                    System.out.println(e.reason);
+                    logger.debug(e.reason);
                 }
                 master.setWorking(false);
             }
@@ -111,9 +115,9 @@ public class CrawlerWorker extends Thread {
         try {
             length = Long.parseLong(contentLength);
         } catch (Exception e) {
-            System.err.println("Failed to parse length");
+            logger.debug("Failed to parse length");
         }
-        System.out.println("Max length is: " + maxContentSize + ", but content size is " + length);
+        logger.debug("Max length is: " + maxContentSize + ", but content size is " + length);
         return contentType != null && contentType.startsWith("text") && length < maxContentSize;
     }
 
@@ -136,9 +140,9 @@ public class CrawlerWorker extends Thread {
             newDate = res.getOrDefault(Constants.HTTPHeaders.DATE, CommonUtil.getCurrentTime());
             contentType = res.getOrDefault(Constants.HTTPHeaders.CONTENT_TYPE, "").trim().toLowerCase();
         } else {
-            System.out.println("[" + Thread.currentThread() + "ALREADY EXIST] " + urlInfo.getRawUrl());
+            logger.debug("[" + Thread.currentThread() + "ALREADY EXIST] " + urlInfo.getRawUrl());
             ResponseObj res = doHead(url, doc.getLastCheckedTime());
-            System.out.println(res);
+            logger.debug(res);
             if (res.getResponseCode() < 300) {
                 res = doGet(url);
                 newDoc = res.getContent();
@@ -164,9 +168,9 @@ public class CrawlerWorker extends Thread {
                     }
                 }
             } else {
-                System.out.println("Content Type is: '" + contentType + "' so skipped.");
+                logger.debug("Content Type is: '" + contentType + "' so skipped.");
             }
-            System.out.println("[" + Thread.currentThread() + "SAVING]" + urlInfo.getRawUrl());
+            logger.debug("[" + Thread.currentThread() + "SAVING]" + urlInfo.getRawUrl());
             master.incCount();
             db.addDocument(urlInfo.getRawUrl(), doc, date);
         }
@@ -202,6 +206,7 @@ public class CrawlerWorker extends Thread {
             String link = e.attr("abs:href");
             if (link != null && link.length() > 7) {
                 URLInfo url = new URLInfo(link);
+                url.setFilePath(url.getFilePath().replace("//", "/"));
                 if (url.getHostName() != null) {
                     links.add(new URLInfo(link));
                 }

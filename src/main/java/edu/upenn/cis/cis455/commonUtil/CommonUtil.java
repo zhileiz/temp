@@ -1,5 +1,9 @@
 package edu.upenn.cis.cis455.commonUtil;
 
+import edu.upenn.cis.cis455.crawler.handlers.RegisterFilter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -11,6 +15,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 public class CommonUtil {
+
+    Logger logger = LogManager.getLogger(RegisterFilter.class);
 
     public static String encrypt(String rawPassword) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");

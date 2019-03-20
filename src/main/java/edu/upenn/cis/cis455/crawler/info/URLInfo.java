@@ -1,5 +1,8 @@
 package edu.upenn.cis.cis455.crawler.info;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class URLInfo {
 	private String hostName;
 	private int portNo;
@@ -7,6 +10,8 @@ public class URLInfo {
 	private String rawUrl;
 	
 	private boolean isSecure = false;
+
+	Logger logger = LogManager.getLogger(URLInfo.class);
 	
 	/**
 	 * Constructor called with raw URL as input - parses URL to obtain host name and file path
@@ -57,7 +62,7 @@ public class URLInfo {
 	}
 
 	public String getRawUrl() {
-	    return this.rawUrl;
+	    return this.getHostURL() + filePath.replace("//", "/");
     }
 
     public String getHostURL() {

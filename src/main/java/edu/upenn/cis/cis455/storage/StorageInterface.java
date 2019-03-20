@@ -1,5 +1,7 @@
 package edu.upenn.cis.cis455.storage;
 
+import java.util.List;
+
 public interface StorageInterface {
     
     /**
@@ -36,6 +38,8 @@ public interface StorageInterface {
 	 * Retrieves a document's contents by URL
 	 */
 	public Object getDocument(String url);
+
+	public List<String> getAllDocumentURLs();
 	
 	/**
 	 * Shuts down / flushes / closes the storage system

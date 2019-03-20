@@ -1,6 +1,8 @@
 package edu.upenn.cis.cis455.crawler.handlers;
 
 import edu.upenn.cis.cis455.model.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import spark.Request;
 import spark.Route;
 import spark.Response;
@@ -10,6 +12,8 @@ import edu.upenn.cis.cis455.storage.StorageInterface;
 import static edu.upenn.cis.cis455.crawler.utils.Constants.USER_SESSION_ID;
 
 public class LoginHandler implements Route {
+
+    Logger logger = LogManager.getLogger(LoginHandler.class);
 
     StorageInterface db;
     
@@ -21,7 +25,7 @@ public class LoginHandler implements Route {
     public String handle(Request req, Response res) throws HaltException {
         String username = req.queryParams("username");
         String password = req.queryParams("password");
-        System.out.println("LOGIN: received " + username + " " + password);
+        logger.debug("LOGIN: received " + username + " " + password);
         if (username == null || password == null) {
             res.redirect("/register");
         } else if (db.getSessionForUser(username, password)) {
@@ -29,7 +33,7 @@ public class LoginHandler implements Route {
             addAuthenticatedUser(req, u);
             res.redirect("/welcome");
         } else {
-            System.err.println("Invalid credentials");
+            logger.debug("Invalid credentials");
             res.redirect("/login");
         }
         return null;

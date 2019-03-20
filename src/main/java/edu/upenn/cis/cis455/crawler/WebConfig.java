@@ -4,6 +4,8 @@ import edu.upenn.cis.cis455.crawler.handlers.*;
 import edu.upenn.cis.cis455.crawler.utils.Constants;
 import edu.upenn.cis.cis455.storage.StorageFactory;
 import edu.upenn.cis.cis455.storage.StorageInterface;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,6 +17,8 @@ import static spark.Spark.post;
 
 public class WebConfig {
 
+    Logger logger = LogManager.getLogger(WebConfig.class);
+
     public WebConfig(String[] args) {
         args = checkArgs(args);
         /* set up port */
@@ -23,7 +27,7 @@ public class WebConfig {
         createDBDirectory(args[0]);
         StorageInterface database = getDB(args[0]);
         if (database == null) {
-            System.out.println("Cannot Instantiate Database");
+            logger.debug("Cannot Instantiate Database");
             System.exit(1);
         }
         /* set up static file folders */
@@ -46,6 +50,9 @@ public class WebConfig {
         post(Constants.Paths.LOGIN, new LoginHandler(database));
         /* Log out*/
         get(Constants.Paths.LOGOUT, new LogoutHandler());
+
+        /* Crawler Page */
+        get(Constants.Paths.LOOKUP, new LookupHandler(database));
     }
 
     private void createDBDirectory(String dirName) {
@@ -69,7 +76,7 @@ public class WebConfig {
 
     private String[] checkArgs(String[] args) {
         //    if (args.length < 1 || args.length > 2) {
-        //        System.out.println("Syntax: WebInterface {path} {root}");
+        //        logger.debug("Syntax: WebInterface {path} {root}");
         //        System.exit(1);
         //    }
         args = new String[2];

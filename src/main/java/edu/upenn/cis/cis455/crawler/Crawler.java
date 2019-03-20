@@ -22,6 +22,8 @@ import edu.upenn.cis.cis455.crawler.info.URLInfo;
 import edu.upenn.cis.cis455.crawler.utils.CrawlerUtils;
 import edu.upenn.cis.cis455.storage.StorageFactory;
 import edu.upenn.cis.cis455.storage.StorageInterface;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -30,6 +32,8 @@ public class Crawler implements CrawlMaster {
     static final int NUM_WORKERS = 10;
     static final String USER_AGENT = "cis455crawler";
     static final String USER_AGENT_ALL = "*";
+
+    Logger logger = LogManager.getLogger(Crawler.class);
 
     CrawlerUrlQueue urlQueue;
     HashMap<String, RobotsTxtInfo> robotsInfo;
@@ -100,12 +104,12 @@ public class Crawler implements CrawlMaster {
             if (disallowed != null) {
                 for (String path : disallowed) {
                     if (info.getFilePath().startsWith(cleanPath(path))) {
-                        System.out.println("DISALLOWED '" + path + "' by '" + info.getFilePath() + "'");
+                        logger.debug("DISALLOWED '" + path + "' by '" + info.getFilePath() + "'");
                         return false;
                     }
                 }
             } else {
-                System.out.println("NO USER AGENT FOUND!");
+                logger.debug("NO USER AGENT FOUND!");
             }
             return true;
         }
@@ -141,7 +145,7 @@ public class Crawler implements CrawlMaster {
                 long timeElapsed = temp.until(now, ChronoUnit.SECONDS);
                 if (timeElapsed < delay) { return true; }
                 else {
-                    System.out.println("[ ALLOWING ] " + site);
+                    logger.debug("[ ALLOWING ] " + site);
                     lastVisitedTimes.put(site, now);
                     return false;
                 }
@@ -217,7 +221,7 @@ public class Crawler implements CrawlMaster {
 
     @Override
     public void shutDown() {
-        System.out.println("[ShutDOWN!] - shutting down");
+        logger.debug("[ShutDOWN!] - shutting down");
         synchronized (urlQueue) {
             urlQueue.exit();
         }
@@ -248,8 +252,10 @@ public class Crawler implements CrawlMaster {
         args = checkArgs(args);
         createDBDirectory(args[1]);
         StorageInterface database = getDB(args[1]);
+
+        Logger logger = LogManager.getLogger(Crawler.class);
         if (database == null) {
-            System.out.println("Cannot Instantiate Database");
+            logger.debug("Cannot Instantiate Database");
             System.exit(1);
         }
         
@@ -265,10 +271,8 @@ public class Crawler implements CrawlMaster {
         }
 
         crawler.shutDown();
-//
-//        // TODO: final shutdown
             
-        System.out.println("Done crawling!");
+        logger.debug("Done crawling!");
     }
 
     private static StorageInterface getDB(String dbName) {
@@ -292,14 +296,14 @@ public class Crawler implements CrawlMaster {
 
     private static String[] checkArgs(String[] args) {
 //        if (args.length < 3 || args.length > 5) {
-//            System.out.println("Usage: Crawler {start URL} {database environment path} {max doc size in MB} {number of files to index}");
+//            logger.debug("Usage: Crawler {start URL} {database environment path} {max doc size in MB} {number of files to index}");
 //            System.exit(1);
 //        }
         args = new String[4];
-        args[0] = "https://dbappserv.cis.upenn.edu/crawltest/";
+        args[0] = "https://dbappserv.cis.upenn.edu/crawltest.html";
         args[1] = "./berkeleyDB";
         args[2] = "11";
-        args[3] = "10";
+        args[3] = "1000";
         return args;
     }
 

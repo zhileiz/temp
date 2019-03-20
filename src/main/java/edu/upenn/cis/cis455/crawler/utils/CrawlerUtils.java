@@ -42,19 +42,26 @@ public class CrawlerUtils {
     }
 
     private static RobotsTxtInfo parseRobotsTxt(String content) {
-        RobotsTxtInfo info = new RobotsTxtInfo();
-        String[] lines = content.split("\n");
-        String currAgent = null;
-        for (String line : lines) {
-            if (!line.isEmpty() && !line.trim().startsWith("#")) {
-                String key = line.substring(0, line.indexOf(":")).trim().toLowerCase();
-                String value = line.substring(line.indexOf(":") + 1, line.length()).trim();
-                if (key.trim().isEmpty() || value.isEmpty()) { continue; }
-                String tempAgent = addKeyValuePair(info, key, value, currAgent);
-                currAgent = tempAgent == null ? currAgent : tempAgent;
+        try {
+            RobotsTxtInfo info = new RobotsTxtInfo();
+            String[] lines = content.split("\n");
+            String currAgent = null;
+            for (String line : lines) {
+                if (!line.trim().isEmpty() && !line.trim().startsWith("#")) {
+                    String key = line.substring(0, line.indexOf(":")).trim().toLowerCase();
+                    String value = line.substring(line.indexOf(":") + 1, line.length()).trim();
+                    if (key.trim().isEmpty() || value.isEmpty()) {
+                        continue;
+                    }
+                    String tempAgent = addKeyValuePair(info, key, value, currAgent);
+                    currAgent = tempAgent == null ? currAgent : tempAgent;
+                }
             }
+            return info;
+        } catch (Exception e) {
+            System.err.println("Failed to parse Robots.TXT");
+            return null;
         }
-        return info;
     }
 
     private static String addKeyValuePair(RobotsTxtInfo tgt, String key, String value, String agent) {

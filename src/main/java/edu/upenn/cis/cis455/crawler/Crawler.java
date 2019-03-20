@@ -31,7 +31,6 @@ public class Crawler implements CrawlMaster {
     static final String USER_AGENT = "cis455crawler";
     static final String USER_AGENT_ALL = "*";
 
-
     CrawlerUrlQueue urlQueue;
     HashMap<String, RobotsTxtInfo> robotsInfo;
     HashMap<String, LocalDateTime> lastVisitedTimes;
@@ -59,7 +58,7 @@ public class Crawler implements CrawlMaster {
         urlQueue.add(initialUrl);
         workers = new CrawlerWorker[numWorkers];
         for (int i = 0; i < numWorkers; i++) {
-            workers[i] = new CrawlerWorker(this, db, urlQueue);
+            workers[i] = new CrawlerWorker(this, db, urlQueue, maxContentLength);
         }
     }
 
@@ -91,10 +90,11 @@ public class Crawler implements CrawlMaster {
     @Override
     public boolean isOKtoCrawl(URLInfo info) {
         synchronized (robotsInfo) {
-            if (robotsInfo.get(info.getHostName()) == null) {
+            if (!robotsInfo.containsKey(info.getHostName())) {
                 robotsInfo.put(info.getHostName(), CrawlerUtils.getRobotsInfo(info));
             }
             RobotsTxtInfo robot = robotsInfo.get(info.getHostName());
+            if (robot == null) { return true; }
             ArrayList<String> disallowed = robot.getDisallowedLinks(USER_AGENT);
             if (disallowed == null) { disallowed = robot.getDisallowedLinks(USER_AGENT_ALL); }
             if (disallowed != null) {
@@ -133,12 +133,13 @@ public class Crawler implements CrawlMaster {
                 return false;
             } else {
                 RobotsTxtInfo robot = robotsInfo.get(site);
+                if (robot == null) { return false; }
                 long delay = robot.getCrawlDelay(USER_AGENT);
                 if (delay < 0) { delay = robot.getCrawlDelay(USER_AGENT_ALL); }
                 LocalDateTime temp = LocalDateTime.from(last);
                 now = LocalDateTime.now();
                 long timeElapsed = temp.until(now, ChronoUnit.SECONDS);
-                if (timeElapsed < 1) { return true; }
+                if (timeElapsed < delay) { return true; }
                 else {
                     System.out.println("[ ALLOWING ] " + site);
                     lastVisitedTimes.put(site, now);
@@ -166,7 +167,11 @@ public class Crawler implements CrawlMaster {
      * We've indexed another document
      */
     @Override
-    public void incCount() { }
+    public void incCount() {
+        synchronized (this) {
+            maxDocumentCount --;
+        }
+    }
     
     /**
      * Workers can poll this to see if they should exit, ie the
@@ -175,7 +180,7 @@ public class Crawler implements CrawlMaster {
     @Override
     public boolean isDone() {
         if (hasStarted) {
-            return urlQueue.isEmpty() && activeWorkerCount == 0;
+            return (urlQueue.isEmpty() && activeWorkerCount == 0) || maxDocumentCount == 0;
         }
         return false;
     }
@@ -291,10 +296,10 @@ public class Crawler implements CrawlMaster {
 //            System.exit(1);
 //        }
         args = new String[4];
-        args[0] = "https://dbappserv.cis.upenn.edu/crawltest.html";
+        args[0] = "https://dbappserv.cis.upenn.edu/crawltest/";
         args[1] = "./berkeleyDB";
-        args[2] = "0";
-        args[3] = "0";
+        args[2] = "11";
+        args[3] = "10";
         return args;
     }
 

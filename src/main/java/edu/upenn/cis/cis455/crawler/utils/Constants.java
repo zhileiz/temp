@@ -33,5 +33,6 @@ public class Constants {
         public static final String IF_MODIFIED_SINCE = "If-Modified-Since";
         public static final String DATE = "Date";
         public static final String CONTENT_TYPE = "Content-Type";
+        public static final String CONTENT_LENGTH = "Content-Length";
     }
 }

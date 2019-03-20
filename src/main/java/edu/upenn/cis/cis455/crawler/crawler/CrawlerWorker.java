@@ -24,13 +24,14 @@ public class CrawlerWorker extends Thread {
     private CrawlMaster master;
     private StorageInterface db;
     private CrawlerUrlQueue queue;
+    private long maxContentSize;
 
-
-    public CrawlerWorker(CrawlMaster master, StorageInterface db, CrawlerUrlQueue queue) {
+    public CrawlerWorker(CrawlMaster master, StorageInterface db, CrawlerUrlQueue queue, int maxContentSize) {
         this.master = master;
         this.db = db;
         this.queue = queue;
         this.shouldContinue = true;
+        this.maxContentSize = maxContentSize * 1024 * 1024;
     }
 
     private class ShouldSleepException extends Exception {
@@ -38,10 +39,16 @@ public class CrawlerWorker extends Thread {
         public ShouldSleepException(int i) { time = i; }
     }
 
+    private class ShouldSkipException extends Exception {
+        String reason;
+        public ShouldSkipException(String reason ) { this.reason = reason; }
+    }
+
     private URLInfo getNextInfo() throws ShouldSleepException {
         synchronized (queue) {
             URLInfo peekInfo = queue.peek();
             if (peekInfo == null) {
+//                System.out.println("[" + Thread.currentThread() + " Sleeping due to null peakInfo]");
                 throw new ShouldSleepException(1);
             }
             if (!master.isOKtoCrawl(peekInfo)) {
@@ -49,6 +56,7 @@ public class CrawlerWorker extends Thread {
                 return null;
             } else {
                 if (master.deferCrawl(peekInfo.getHostName())) {
+//                    System.out.println("[" + Thread.currentThread() + " Sleeping due to defer..]");
                     throw new ShouldSleepException(1);
                 } else {
                     return queue.nonBlockPoll();
@@ -74,15 +82,20 @@ public class CrawlerWorker extends Thread {
             URLInfo urlInfo;
             try { urlInfo = getNextInfo(); }
             catch (ShouldSleepException e) {
+//                System.out.println("[" + Thread.currentThread() + " Sleeping..]");
                 sleep(e.time); continue;
             }
             if (urlInfo != null) {
                 master.setWorking(true);
                 System.out.println("\n\n===============\n [CRAWLING By" + Thread.currentThread() + "...]" + urlInfo.getRawUrl());
-                /* Check and Crawl */
-                String[] newDoc = headOrGet(urlInfo);
-                /* Parse New Document and save */
-                parseAndSave(newDoc, urlInfo);
+                try {
+                    /* Check and Crawl */
+                    String[] newDoc = headOrGet(urlInfo);
+                    /* Parse New Document and save */
+                    parseAndSave(newDoc, urlInfo);
+                } catch (ShouldSkipException e) {
+                    System.out.println(e.reason);
+                }
                 master.setWorking(false);
             }
         }
@@ -90,22 +103,40 @@ public class CrawlerWorker extends Thread {
     }
 
     private boolean shouldParse(String contentType) {
-        return contentType.startsWith("text/html");
+        return contentType != null && contentType.startsWith("text/html");
     }
 
-    private String[] headOrGet(URLInfo urlInfo) {
+    private boolean shouldSave(String contentType, String contentLength) {
+        long length = -1;
+        try {
+            length = Long.parseLong(contentLength);
+        } catch (Exception e) {
+            System.err.println("Failed to parse length");
+        }
+        System.out.println("Max length is: " + maxContentSize + ", but content size is " + length);
+        return contentType != null && contentType.startsWith("text") && length < maxContentSize;
+    }
+
+    private String[] headOrGet(URLInfo urlInfo) throws ShouldSkipException {
         String url = urlInfo.getRawUrl();
         DocumentData doc = (DocumentData) db.getDocument(url);
         String newDoc = null;
         String newDate = null;
         String contentType = null;
         if (doc == null) {
+            ResponseObj testRes = doHead(url, null);
+            contentType = testRes.getOrDefault(Constants.HTTPHeaders.CONTENT_TYPE, "");
+            String contentLength = testRes.getOrDefault(Constants.HTTPHeaders.CONTENT_LENGTH, "0");
+            if (!shouldSave(contentType, contentLength)) {
+                throw new ShouldSkipException("[Skipped] Content Type is: " + contentType +
+                                            " and Content Length is: " + contentLength);
+            }
             ResponseObj res = doGet(url);
             newDoc = res.getContent();
             newDate = res.getOrDefault(Constants.HTTPHeaders.DATE, CommonUtil.getCurrentTime());
             contentType = res.getOrDefault(Constants.HTTPHeaders.CONTENT_TYPE, "").trim().toLowerCase();
         } else {
-            System.out.println("[ALREADY EXIST] " + urlInfo.getRawUrl());
+            System.out.println("[" + Thread.currentThread() + "ALREADY EXIST] " + urlInfo.getRawUrl());
             ResponseObj res = doHead(url, doc.getLastCheckedTime());
             System.out.println(res);
             if (res.getResponseCode() < 300) {
@@ -135,14 +166,17 @@ public class CrawlerWorker extends Thread {
             } else {
                 System.out.println("Content Type is: '" + contentType + "' so skipped.");
             }
-            System.out.println("[SAVING]" + urlInfo.getRawUrl());
+            System.out.println("[" + Thread.currentThread() + "SAVING]" + urlInfo.getRawUrl());
+            master.incCount();
             db.addDocument(urlInfo.getRawUrl(), doc, date);
         }
     }
 
     private ResponseObj doHead(String url, String date) {
         RequestObj req = new RequestObj(url, Constants.HTTPMethods.HEAD);
-        req.addProperty(Constants.HTTPHeaders.IF_MODIFIED_SINCE, date);
+        if (date != null) {
+            req.addProperty(Constants.HTTPHeaders.IF_MODIFIED_SINCE, date);
+        }
         return CrawlerUtils.makeRequest(req);
     }
 
@@ -162,9 +196,15 @@ public class CrawlerWorker extends Thread {
         Document tgt = Jsoup.parse(doc, baseUrl);
         Elements hrefs = tgt.select("a");
         for (Element e : hrefs) {
+            if (e.attr("href").startsWith("#")) {
+                continue;
+            }
             String link = e.attr("abs:href");
             if (link != null && link.length() > 7) {
-                links.add(new URLInfo(link));
+                URLInfo url = new URLInfo(link);
+                if (url.getHostName() != null) {
+                    links.add(new URLInfo(link));
+                }
             }
         }
         return links;

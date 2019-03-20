@@ -15,9 +15,11 @@ public class CrawlerUrlQueue {
     }
 
     public synchronized void add(URLInfo urlInfo) {
-        System.out.println("[ADDED:]" + urlInfo.getRawUrl());
-        queue.add(urlInfo);
-        this.notifyAll();
+        if (urlInfo != null) {
+            System.out.println("[" + Thread.currentThread() + "ADDED:]" + urlInfo.getRawUrl());
+            queue.add(urlInfo);
+            this.notifyAll();
+        }
     }
 
     public synchronized URLInfo peek() {

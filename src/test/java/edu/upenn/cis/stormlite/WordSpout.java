@@ -119,11 +119,6 @@ public class WordSpout implements IRichSpout {
 		            	log.debug(getExecutorId() + " emitting " + word);
 		    	        this.collector.emit(new Values<Object>(word));
 		    		}
-		    	} else {
-		    		int pos = r.nextInt(words.length);
-		    		String word = words[pos];
-	            	log.debug(getExecutorId() + " emitting " + word);
-	    	        this.collector.emit(new Values<Object>(word));
 		    	}
 	    	} catch (IOException e) {
 	    		e.printStackTrace();
@@ -134,7 +129,7 @@ public class WordSpout implements IRichSpout {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("word"));
+        declarer.declare(new Fields("word", "content"));
     }
 
 

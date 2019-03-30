@@ -1,4 +1,4 @@
-package edu.upenn.cis.cis455.crawler.crawler;
+package edu.upenn.cis.cis455.crawler.crawler.ms1;
 
 import edu.upenn.cis.cis455.commonUtil.CommonUtil;
 import edu.upenn.cis.cis455.crawler.CrawlMaster;
@@ -86,7 +86,6 @@ public class CrawlerWorker extends Thread {
             URLInfo urlInfo;
             try { urlInfo = getNextInfo(); }
             catch (ShouldSleepException e) {
-//                logger.debug("[" + Thread.currentThread() + " Sleeping..]");
                 sleep(e.time); continue;
             }
             if (urlInfo != null) {
@@ -135,6 +134,7 @@ public class CrawlerWorker extends Thread {
                 throw new ShouldSkipException("[Skipped] Content Type is: " + contentType +
                                             " and Content Length is: " + contentLength);
             }
+            logger.info(url + ": Downloading");
             ResponseObj res = doGet(url);
             newDoc = res.getContent();
             newDate = res.getOrDefault(Constants.HTTPHeaders.DATE, CommonUtil.getCurrentTime());
@@ -144,10 +144,12 @@ public class CrawlerWorker extends Thread {
             ResponseObj res = doHead(url, doc.getLastCheckedTime());
             logger.debug(res);
             if (res.getResponseCode() < 300) {
+                logger.info(url + ": Downloading");
                 res = doGet(url);
                 newDoc = res.getContent();
                 newDate = res.getOrDefault(Constants.HTTPHeaders.DATE, CommonUtil.getCurrentTime());
             }
+            logger.info(url + ": Not Modified");
             contentType = res.getOrDefault(Constants.HTTPHeaders.CONTENT_TYPE, "").trim().toLowerCase();
         }
         return new String[]{newDoc, newDate, contentType};

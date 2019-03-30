@@ -1,22 +1,14 @@
 package edu.upenn.cis.cis455.crawler;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.net.ssl.HttpsURLConnection;
-
-import edu.upenn.cis.cis455.commonUtil.CommonUtil;
-import edu.upenn.cis.cis455.crawler.crawler.CrawlerUrlQueue;
-import edu.upenn.cis.cis455.crawler.crawler.CrawlerWorker;
+import edu.upenn.cis.cis455.crawler.crawler.ms1.CrawlerUrlQueue;
+import edu.upenn.cis.cis455.crawler.crawler.ms1.CrawlerWorker;
 import edu.upenn.cis.cis455.crawler.info.RobotsTxtInfo;
 import edu.upenn.cis.cis455.crawler.info.URLInfo;
 import edu.upenn.cis.cis455.crawler.utils.CrawlerUtils;
@@ -24,8 +16,6 @@ import edu.upenn.cis.cis455.storage.StorageFactory;
 import edu.upenn.cis.cis455.storage.StorageInterface;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
 
 public class Crawler implements CrawlMaster {
@@ -297,10 +287,10 @@ public class Crawler implements CrawlMaster {
     private static String[] checkArgs(String[] args) {
         if (args.length < 3 || args.length > 5) {
             args = new String[4];
-            args[0] = "https://dbappserv.cis.upenn.edu/crawltest.html";
-            args[1] = "./berkeleyDB";
-            args[2] = "11";
-            args[3] = "1000";
+            args[0] = "http://ec2-54-86-148-231.compute-1.amazonaws.com/";
+            args[1] = "dbs";
+            args[2] = "1";
+            args[3] = "3000";
         }
         return args;
     }

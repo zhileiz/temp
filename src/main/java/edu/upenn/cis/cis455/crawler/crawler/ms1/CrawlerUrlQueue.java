@@ -1,6 +1,5 @@
-package edu.upenn.cis.cis455.crawler.crawler;
+package edu.upenn.cis.cis455.crawler.crawler.ms1;
 
-import edu.upenn.cis.cis455.crawler.handlers.RegisterFilter;
 import edu.upenn.cis.cis455.crawler.info.URLInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

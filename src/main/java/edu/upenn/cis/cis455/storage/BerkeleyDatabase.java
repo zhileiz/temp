@@ -18,10 +18,12 @@ public class BerkeleyDatabase {
     private static final String USER_STORE = "user_store";
     private static final String DOCUMENT_STORE = "document_store";
     private static final String CONTENT_SEEN_STORE = "content_seen_store";
+    private static final String CHANNEL_STORE = "channel_store";
 
     private Database userDb;
     private Database documentDb;
     private Database contentSeenDb;
+    private Database channelDb;
 
     public BerkeleyDatabase(String homeDirectory) throws DatabaseException, FileNotFoundException {
         logger.debug("Opening environment in: " + homeDirectory);
@@ -44,6 +46,7 @@ public class BerkeleyDatabase {
         userDb = env.openDatabase(null, USER_STORE, dbConfig);
         documentDb = env.openDatabase(null, DOCUMENT_STORE, dbConfig);
         contentSeenDb = env.openDatabase(null, CONTENT_SEEN_STORE, dbConfig);
+        channelDb = env.openDatabase(null, CHANNEL_STORE, dbConfig);
     }
 
     public final StoredClassCatalog getClassCatalog() {
@@ -62,10 +65,13 @@ public class BerkeleyDatabase {
         return contentSeenDb;
     }
 
+    public final Database getChannelDb() { return channelDb; }
+
     public void close() throws DatabaseException {
         userDb.close();
         documentDb.close();
         contentSeenDb.close();
+        channelDb.close();
         javaCatalog.close();
         env.close();
     }

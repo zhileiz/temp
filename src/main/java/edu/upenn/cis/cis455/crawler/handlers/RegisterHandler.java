@@ -7,6 +7,8 @@ import org.apache.logging.log4j.Logger;
 import spark.Request;
 import spark.Response;
 import spark.Route;
+
+import static edu.upenn.cis.cis455.crawler.utils.Constants.Paths.*;
 import static edu.upenn.cis.cis455.crawler.utils.RequestUtils.*;
 
 public class RegisterHandler implements Route {
@@ -14,7 +16,6 @@ public class RegisterHandler implements Route {
     Logger logger = LogManager.getLogger(RegisterHandler.class);
 
     StorageInterface db;
-    private String firstName;
 
     public RegisterHandler(StorageInterface db) { this.db = db; }
 
@@ -26,15 +27,15 @@ public class RegisterHandler implements Route {
         String password = req.queryParams("password");
         logger.debug("REGISTER: received " + firstName + " " + lastName + " " + username + " " + password);
         if (firstName == null || lastName == null || username == null || password == null) {
-            res.redirect("/register");
+            res.redirect(REGISTER);
         } else {
             int result = db.addUser(username, firstName, lastName, password);
             if (result > 0) {
                 User u = new User(219, username, password);
                 addAuthenticatedUser(req, u);
-                res.redirect("/welcome");
+                res.redirect(MAIN_PAGE);
             } else {
-                res.redirect("/register.html");
+                res.redirect(REGISTER);
             }
         }
         return null;

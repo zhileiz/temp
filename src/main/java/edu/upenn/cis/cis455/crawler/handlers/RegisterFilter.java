@@ -8,6 +8,9 @@ import spark.Filter;
 import spark.Request;
 import spark.Response;
 
+import static edu.upenn.cis.cis455.crawler.utils.Constants.HTTPMethods.*;
+import static edu.upenn.cis.cis455.crawler.utils.Constants.Pages.*;
+import static edu.upenn.cis.cis455.crawler.utils.Constants.Paths.*;
 import static edu.upenn.cis.cis455.crawler.utils.RequestUtils.getAuthenticatedUser;
 import static spark.Spark.halt;
 
@@ -18,10 +21,10 @@ public class RegisterFilter implements Filter {
     public void handle(Request req, Response res) throws Exception {
         User authUser = getAuthenticatedUser(req);
         if(authUser != null) {
-            res.redirect(Constants.Paths.MAIN_PAGE);
+            res.redirect(MAIN_PAGE);
             halt();
-        } else if (req.requestMethod().equals("GET")) {
-            res.redirect(Constants.Pages.REGISTER_PAGE);
+        } else if (req.requestMethod().equals(GET)) {
+            res.redirect(REGISTER_PAGE);
             halt();
         }
     }

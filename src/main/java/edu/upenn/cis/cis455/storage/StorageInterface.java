@@ -1,5 +1,7 @@
 package edu.upenn.cis.cis455.storage;
 
+import edu.upenn.cis.cis455.model.Channel;
+
 import java.util.List;
 
 public interface StorageInterface {
@@ -28,7 +30,9 @@ public interface StorageInterface {
 	 * Adds a user and returns an ID
 	 */
 	public int addUser(String username, String firstName, String lastName, String password);
-	
+
+	int addChannel(String channelName, String xpath);
+
 	/**
 	 * Tries to log in the user, or else throws a HaltException
 	 */
@@ -40,8 +44,12 @@ public interface StorageInterface {
 	public Object getDocument(String url);
 
 	public List<String> getAllDocumentURLs();
-	
-	/**
+
+    List<Channel> getAllChannels();
+
+    Channel getChannelByName(String channelName);
+
+    /**
 	 * Shuts down / flushes / closes the storage system
 	 */
 	public void close();

@@ -6,10 +6,12 @@ public class Constants {
 
     public class Paths {
         public static final String REGISTER = "/register";
-        public static final String MAIN_PAGE = "/welcome";
+        public static final String MAIN_PAGE = "/";
         public static final String LOGIN = "/login";
         public static final String LOGOUT = "/logout";
         public static final String LOOKUP = "/lookup";
+        public static final String CREATE = "/create/:name";
+        public static final String SHOW = "/show";
     }
 
     public class Pages {

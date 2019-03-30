@@ -9,6 +9,7 @@ import spark.Response;
 import spark.HaltException;
 import edu.upenn.cis.cis455.storage.StorageInterface;
 
+import static edu.upenn.cis.cis455.crawler.utils.Constants.Paths.*;
 import static edu.upenn.cis.cis455.crawler.utils.Constants.USER_SESSION_ID;
 
 public class LoginHandler implements Route {
@@ -27,14 +28,14 @@ public class LoginHandler implements Route {
         String password = req.queryParams("password");
         logger.debug("LOGIN: received " + username + " " + password);
         if (username == null || password == null) {
-            res.redirect("/register");
+            res.redirect(REGISTER);
         } else if (db.getSessionForUser(username, password)) {
             User u = new User(219, username, password);
             addAuthenticatedUser(req, u);
-            res.redirect("/welcome");
+            res.redirect(MAIN_PAGE);
         } else {
             logger.debug("Invalid credentials");
-            res.redirect("/login");
+            res.redirect(LOGIN);
         }
         return null;
     }

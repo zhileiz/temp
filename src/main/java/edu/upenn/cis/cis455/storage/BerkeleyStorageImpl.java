@@ -78,6 +78,17 @@ public class BerkeleyStorageImpl implements StorageInterface {
     }
 
     @Override
+    public int addChannel(String channelName, String xpath) {
+        try {
+            runner.run(new TransactionAddChannel(channelName, xpath));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+        return 1;
+    }
+
+    @Override
     public boolean getSessionForUser(String username, String password) {
         try {
             TransactionAuthenticateUser transaction = new TransactionAuthenticateUser(username, encrypt(password));
@@ -117,6 +128,42 @@ public class BerkeleyStorageImpl implements StorageInterface {
             logger.debug(e);
         }
         return list;
+    }
+
+    @Override
+    public List<Channel> getAllChannels() {
+        List<Channel> list = new ArrayList<>();
+        try {
+            runner.run(() -> {
+                Iterator it = views.getChannelMap().entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry entry = (Map.Entry) it.next();
+                    list.add(new Channel((ChannelKey)entry.getKey(), (ChannelData)entry.getValue()));
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    @Override
+    public Channel getChannelByName(String channelName) {
+        Channel channel = null;
+        try {
+            runner.run(() -> {
+                Map channels = views.getChannelMap();
+                ChannelKey key = new ChannelKey(channelName);
+                ChannelData data = (ChannelData) channels.get(new ChannelKey(channelName));
+                if (key == null || data == null) { throw new NoSuchChannelException(); }
+                throw new ChannelFound(key, data);
+            });
+        } catch (Exception e) {
+            if (e instanceof ChannelFound) {
+                channel = ((ChannelFound) e).channel;
+            }
+        }
+        return channel;
     }
 
     @Override
@@ -224,6 +271,28 @@ public class BerkeleyStorageImpl implements StorageInterface {
         }
     }
 
+    /**********************************
+     * PRIVATE: CHANNELS Transactions *
+     **********************************/
+
+    private class TransactionAddChannel implements TransactionWorker {
+        private String name, xpath;
+
+        public TransactionAddChannel(String name, String xpath) {
+            this.name = name; this.xpath = xpath;
+        }
+
+        @Override
+        public void doWork() throws Exception {
+            Map channels = views.getChannelMap();
+            if (channels.containsKey(new ChannelKey(name))) {
+                throw new ChannelAlreadyExistException();
+            } else {
+                channels.put(new ChannelKey(name), new ChannelData(xpath));
+            }
+        }
+    }
+
     /****************************************
      * PRIVATE: User Transaction Exceptions *
      ****************************************/
@@ -239,5 +308,29 @@ public class BerkeleyStorageImpl implements StorageInterface {
     private class UserAlreadyExistException extends Exception {
         @Override
         public String getMessage() { return "User Already Exist!"; }
+    }
+
+    /*******************************
+     * PRIVATE: CHANNEL Exceptions *
+     *******************************/
+    private class ChannelAlreadyExistException extends Exception {
+        @Override
+        public String getMessage() {
+            return "Channel Already Exist!";
+        }
+    }
+
+    private class NoSuchChannelException extends Exception {
+        @Override
+        public String getMessage() {
+            return "Channel Does Not Exist";
+        }
+    }
+
+    private class ChannelFound extends Exception {
+        private Channel channel;
+        public ChannelFound(ChannelKey key, ChannelData data) {
+            channel = new Channel(key, data);
+        }
     }
 }

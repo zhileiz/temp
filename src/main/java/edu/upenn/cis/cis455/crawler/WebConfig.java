@@ -53,6 +53,10 @@ public class WebConfig {
 
         /* Crawler Page */
         get(Constants.Paths.LOOKUP, new LookupHandler(database));
+        /* Channel Creation Page */
+        get(Constants.Paths.CREATE, new ChannelCreateHandler());
+        /* Channel Show Page */
+        get(Constants.Paths.SHOW, new ChannelShowHandler());
     }
 
     private void createDBDirectory(String dirName) {

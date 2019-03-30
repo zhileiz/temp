@@ -80,7 +80,7 @@ public class WebConfig {
         //        System.exit(1);
         //    }
         args = new String[2];
-        args[0] = "./berkeleyDB";
+        args[0] = "./dbs";
         args[1] = "/public";
         return args;
     }

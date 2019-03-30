@@ -46,7 +46,7 @@ public class CrawlerUtils {
         }
     }
 
-    private static RobotsTxtInfo parseRobotsTxt(String content) {
+    public static RobotsTxtInfo parseRobotsTxt(String content) {
         try {
             RobotsTxtInfo info = new RobotsTxtInfo();
             String[] lines = content.split("\n");
@@ -90,6 +90,17 @@ public class CrawlerUtils {
             default:
                 return null;
         }
+    }
+
+    public static String wrapURL(String url) {
+        if (!url.endsWith("/")) {
+            String[] parts = url.split("/");
+            String lastPart = parts[parts.length - 1];
+            if (lastPart.split("\\.").length < 2) {
+                return url + "/";
+            }
+        }
+        return url;
     }
 
 

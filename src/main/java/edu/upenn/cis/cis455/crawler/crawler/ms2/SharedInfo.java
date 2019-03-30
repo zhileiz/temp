@@ -1,14 +1,13 @@
 package edu.upenn.cis.cis455.crawler.crawler.ms2;
 
+import edu.upenn.cis.cis455.crawler.CrawlerMS2;
 import edu.upenn.cis.cis455.crawler.info.RobotsTxtInfo;
 import edu.upenn.cis.cis455.crawler.info.URLInfo;
+import edu.upenn.cis.cis455.crawler.utils.Constants;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static edu.upenn.cis.cis455.crawler.crawler.ms2.StormConstants.Crawler.*;
@@ -28,10 +27,18 @@ public class SharedInfo {
     private Map<String, RobotsTxtInfo> robotsInfo;
     private Map<String, LocalDateTime> lastVisitedTimes;
 
+    private CrawlerMS2 master;
+    private int maxContentLength;
+    private int maxDocumentCount;
+
     private SharedInfo() {
         frontierQueue = new ArrayDeque<>();
         robotsInfo = new HashMap<>();
         lastVisitedTimes = new HashMap<>();
+    }
+
+    public void setMaster(CrawlerMS2 master) {
+        this.master = master;
     }
 
     public void addUrl(String url) {
@@ -43,16 +50,13 @@ public class SharedInfo {
 
     public String pullUrl() {
         synchronized (frontierQueue) {
-            if (frontierQueue.isEmpty()) {
+            if (frontierQueue.isEmpty()) { return null; }
+            URLInfo info = frontierQueue.poll();
+            if (deferCrawl(info.getHostName())) {
+                frontierQueue.add(info);
                 return null;
             } else {
-                URLInfo info = frontierQueue.poll();
-                if (deferCrawl(info.getHostName())) {
-                    frontierQueue.add(info);
-                    return null;
-                } else {
-                    return info.getRawUrl();
-                }
+                return info.getRawUrl();
             }
         }
     }
@@ -73,6 +77,7 @@ public class SharedInfo {
         /* No delay if no requirement */
         RobotsTxtInfo robot = robotsInfo.get(site);
         long delay = robot.getCrawlDelay(USER_AGENT);
+        delay = delay / 2;
         if (delay < 0) {
             delay = robot.getCrawlDelay(USER_AGENT_ALL);
         }
@@ -85,6 +90,27 @@ public class SharedInfo {
         lastVisitedTimes.put(site, now);
         return false;
     }
+
+    public RobotsTxtInfo getRobotsInfo(String url) {
+        String host = (new URLInfo(url)).getHostName();
+        synchronized (robotsInfo) {
+            return robotsInfo.get(host);
+        }
+    }
+
+    public boolean containsRobot(String url) {
+        String host = (new URLInfo(url)).getHostName();
+        synchronized (robotsInfo) {
+            return robotsInfo.containsKey(host);
+        }
+    }
+
+    public void addRobotInfo(String host, RobotsTxtInfo info) {
+        synchronized (robotsInfo) {
+            robotsInfo.put(host, info);
+        }
+    }
+
 
 
 

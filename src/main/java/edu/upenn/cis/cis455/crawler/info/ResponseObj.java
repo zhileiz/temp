@@ -34,7 +34,12 @@ public class ResponseObj {
     }
 
     private void setContent(HttpURLConnection conn) throws IOException {
-        InputStreamReader reader = new InputStreamReader(conn.getInputStream());
+        InputStreamReader reader = null;
+        if (conn.getResponseCode() >= 400) {
+            reader = new InputStreamReader(conn.getErrorStream());
+        } else {
+            reader = new InputStreamReader(conn.getInputStream());
+        }
         BufferedReader bufferedReader = new BufferedReader(reader);
         StringBuilder response = new StringBuilder();
         String responseSingle = null;

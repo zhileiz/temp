@@ -14,10 +14,10 @@ import java.util.UUID;
 
 import static edu.upenn.cis.cis455.crawler.crawler.ms2.StormConstants.FieldNames.*;
 
-public class DomParserBolt implements IRichBolt {
+public class DomParserBolt extends StorageAccessorBolt {
     private OutputCollector collector;
 
-    Fields schema = new Fields(TYPE, CONTENT);
+    Fields schema = new Fields(EVENT);
 
     String executorId = UUID.randomUUID().toString();
 
@@ -26,8 +26,14 @@ public class DomParserBolt implements IRichBolt {
 
     @Override
     public void execute(Tuple input) {
-        String word = input.getStringByField(URL);
-        collector.emit(new Values<Object>(word, word));
+        String type = input.getStringByField(TYPE);
+        String content = input.getStringByField(CONTENT);
+        String date = input.getStringByField(DATE);
+        String base = input.getStringByField(BASE);
+        if (type.contains("xml")) {
+            System.out.println("[🖨 XML: ] Received XML");
+            getDB().addDocument(base, content, date);
+        }
     }
 
     @Override

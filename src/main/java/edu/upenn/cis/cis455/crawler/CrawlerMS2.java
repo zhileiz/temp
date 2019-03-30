@@ -34,6 +34,7 @@ public class CrawlerMS2 implements CrawlMaster {
         configureTopology(4, 4, 4);
         this.maxContentLength = size;
         this.maxDocumentCount = count;
+        SharedInfo.getInstance().setMaster(this);
         SharedInfo.getInstance().addUrl(url);
     }
 
@@ -48,6 +49,7 @@ public class CrawlerMS2 implements CrawlMaster {
         builder.setSpout(SPOUT, spout, 1);
         builder.setBolt(FETCHER_BOLT, fetcherBolt, numFetcher).shuffleGrouping(SPOUT);
         builder.setBolt(EXTRACTOR_BOLT, extractorBolt, numExtractor).shuffleGrouping(FETCHER_BOLT);
+        builder.setBolt(PARSER_BOLT,parserBolt, numExtractor).shuffleGrouping(FETCHER_BOLT);
         builder.setBolt(FILTER_BOLT, filterBolt, numFilter).shuffleGrouping(EXTRACTOR_BOLT);
         topology = builder.createTopology();
     }
@@ -102,6 +104,8 @@ public class CrawlerMS2 implements CrawlMaster {
     public void shutDown() {
         cluster.killTopology("test");
         cluster.shutdown();
+        System.out.println("[⛔️ ShutDOWN: ]");
+        System.exit(0);
     }
 
     /**
@@ -128,7 +132,7 @@ public class CrawlerMS2 implements CrawlMaster {
         CrawlerMS2 crawler = new CrawlerMS2(startUrl, size, count);
         crawler.start();
         try {
-            Thread.sleep(3000);
+            Thread.sleep(3000000);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -158,7 +162,7 @@ public class CrawlerMS2 implements CrawlMaster {
     private static String[] checkArgs(String[] args) {
         if (args.length < 3 || args.length > 5) {
             args = new String[4];
-            args[0] = "https://en.wikipedia.org/wiki/Main_Page";
+            args[0] = "https://dbappserv.cis.upenn.edu/crawltest/nytimes/Americas.xml";
             args[1] = "dbs";
             args[2] = "1";
             args[3] = "3000";

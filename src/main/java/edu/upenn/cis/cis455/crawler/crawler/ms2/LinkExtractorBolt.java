@@ -1,5 +1,8 @@
 package edu.upenn.cis.cis455.crawler.crawler.ms2;
 
+import edu.upenn.cis.cis455.crawler.info.URLInfo;
+import edu.upenn.cis.cis455.crawler.utils.CrawlerUtils;
+import edu.upenn.cis.cis455.storage.StorageInterface;
 import edu.upenn.cis.stormlite.OutputFieldsDeclarer;
 import edu.upenn.cis.stormlite.TopologyContext;
 import edu.upenn.cis.stormlite.bolt.IRichBolt;
@@ -8,13 +11,19 @@ import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 import edu.upenn.cis.stormlite.tuple.Values;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static edu.upenn.cis.cis455.crawler.crawler.ms2.StormConstants.FieldNames.*;
 
-public class LinkExtractorBolt implements IRichBolt {
+public class LinkExtractorBolt extends StorageAccessorBolt {
     private OutputCollector collector;
 
     Fields schema = new Fields(LINK);
@@ -28,11 +37,30 @@ public class LinkExtractorBolt implements IRichBolt {
     public void execute(Tuple input) {
         String type = input.getStringByField(TYPE);
         String content = input.getStringByField(CONTENT);
-        System.out.println(type + ":" + content);
-        for (int i = 0; i < 5; i++) {
-            String aggregate = "LINK: + " + i + "{type:" + type + ", content:" + content + "}";
-            collector.emit(new Values<Object>(aggregate));
+        String date = input.getStringByField(DATE);
+        String base = input.getStringByField(BASE);
+        if (type.contains("html")) {
+            List<String> urls = parseDoc(content, base);
+            for (String url : urls) {
+                collector.emit(new Values<>(url));
+            }
+            getDB().addDocument(base, content, date);
         }
+    }
+
+    private List<String> parseDoc(String doc, String base) {
+        String baseUrl = CrawlerUtils.wrapURL(base);
+        List<String> links = new ArrayList<>();
+        Document tgt = Jsoup.parse(doc, baseUrl);
+        Elements refs = tgt.select("a");
+        for (Element e : refs) {
+            if (e.attr("href").startsWith("#")) { continue; }
+            String link = e.attr("abs:href");
+            if (link != null && link.length() > 7) {
+                links.add(link);
+            }
+        }
+        return links;
     }
 
     @Override

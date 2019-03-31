@@ -1,8 +1,9 @@
 package edu.upenn.cis.cis455.xpathengine;
 
 import edu.upenn.cis.cis455.model.OccurrenceEvent;
+import org.w3c.dom.Document;
 
-interface XPathEngine {
+public interface XPathEngine {
 
 
 	/**
@@ -32,4 +33,7 @@ interface XPathEngine {
 	 */
 	boolean[] evaluateEvent(OccurrenceEvent event);
 
+	boolean[] evaluate(Document doc);
+
+	String[] getPaths();
 }

@@ -89,7 +89,8 @@ public class DocumentFetcherBolt extends StorageAccessorBolt {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return contentType != null && contentType.startsWith("text");
+        System.out.println(contentType);
+        return contentType != null && (contentType.startsWith("text") || contentType.contains("xml"));
     }
 
     private String getSavedDate(String url) {

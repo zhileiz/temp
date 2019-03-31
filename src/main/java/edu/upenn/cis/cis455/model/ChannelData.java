@@ -7,16 +7,20 @@ import java.util.List;
 public class ChannelData implements Serializable {
 
     private String xpath;
+    private String creator;
     private List<String> files;
 
-    public ChannelData(String xpath) {
+    public ChannelData(String xpath, String creator) {
         this.xpath = xpath.trim();
+        this.creator = creator;
         this.files = new ArrayList<>();
     }
 
     public String getXpath() {
         return xpath;
     }
+
+    public String getCreator() { return creator; }
 
     public List<String> getFiles() {
         return files;

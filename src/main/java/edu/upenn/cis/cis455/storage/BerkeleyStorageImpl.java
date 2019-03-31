@@ -78,9 +78,9 @@ public class BerkeleyStorageImpl implements StorageInterface {
     }
 
     @Override
-    public int addChannel(String channelName, String xpath) {
+    public int addChannel(String channelName, String xpath, String creator) {
         try {
-            runner.run(new TransactionAddChannel(channelName, xpath));
+            runner.run(new TransactionAddChannel(channelName, xpath, creator));
         } catch (Exception e) {
             e.printStackTrace();
             return -1;
@@ -164,6 +164,24 @@ public class BerkeleyStorageImpl implements StorageInterface {
             }
         }
         return channel;
+    }
+
+    @Override
+    public void addDocumentToChannel(String channelName, String url) {
+        final String cName = channelName;
+        final String docName = url;
+        try {
+            runner.run(() -> {
+                Map channels = views.getChannelMap();
+                ChannelKey key = new ChannelKey(cName);
+                ChannelData data = (ChannelData) channels.get(key);
+                data.addFile(docName);
+                channels.put(key, data);
+            });
+            System.out.println("[💾 Match Saved: ]" + url + " -> " + cName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -276,10 +294,10 @@ public class BerkeleyStorageImpl implements StorageInterface {
      **********************************/
 
     private class TransactionAddChannel implements TransactionWorker {
-        private String name, xpath;
+        private String name, xpath, creator;
 
-        public TransactionAddChannel(String name, String xpath) {
-            this.name = name; this.xpath = xpath;
+        public TransactionAddChannel(String name, String xpath, String creator) {
+            this.name = name; this.xpath = xpath; this.creator = creator;
         }
 
         @Override
@@ -288,7 +306,7 @@ public class BerkeleyStorageImpl implements StorageInterface {
             if (channels.containsKey(new ChannelKey(name))) {
                 throw new ChannelAlreadyExistException();
             } else {
-                channels.put(new ChannelKey(name), new ChannelData(xpath));
+                channels.put(new ChannelKey(name), new ChannelData(xpath, creator));
             }
         }
     }

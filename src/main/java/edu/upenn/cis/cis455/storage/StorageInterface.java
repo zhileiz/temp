@@ -31,7 +31,7 @@ public interface StorageInterface {
 	 */
 	public int addUser(String username, String firstName, String lastName, String password);
 
-	int addChannel(String channelName, String xpath);
+	int addChannel(String channelName, String xpath, String creator);
 
 	/**
 	 * Tries to log in the user, or else throws a HaltException
@@ -48,6 +48,8 @@ public interface StorageInterface {
     List<Channel> getAllChannels();
 
     Channel getChannelByName(String channelName);
+
+    void addDocumentToChannel(String channelName, String url);
 
     /**
 	 * Shuts down / flushes / closes the storage system

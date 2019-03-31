@@ -162,7 +162,7 @@ public class CrawlerMS2 implements CrawlMaster {
     private static String[] checkArgs(String[] args) {
         if (args.length < 3 || args.length > 5) {
             args = new String[4];
-            args[0] = "https://dbappserv.cis.upenn.edu/crawltest/nytimes/Americas.xml";
+            args[0] = "https://dbappserv.cis.upenn.edu/crawltest.html";
             args[1] = "dbs";
             args[2] = "1";
             args[3] = "3000";

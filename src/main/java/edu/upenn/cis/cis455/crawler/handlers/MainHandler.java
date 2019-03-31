@@ -29,7 +29,7 @@ public class MainHandler implements Route {
         SimpleTable table = new SimpleTable("Channel Name", "XPath", "Document Count", "Creator");
         for (Channel ch : channels) {
             String link = "<a href=\"/show?channel=" + ch.getName() + "\">" + ch.getName() + "</a>";
-            table.addRow(link, ch.getXpath(), String.valueOf(ch.getDocuments().size()), "NETS");
+            table.addRow(link, ch.getXpath(), String.valueOf(ch.getDocuments().size()), ch.getCreator());
         }
         return new ViewElement(table.render());
     }

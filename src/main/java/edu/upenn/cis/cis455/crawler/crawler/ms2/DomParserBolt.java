@@ -1,5 +1,9 @@
 package edu.upenn.cis.cis455.crawler.crawler.ms2;
 
+import edu.upenn.cis.cis455.model.Channel;
+import edu.upenn.cis.cis455.xpathengine.*;
+import edu.upenn.cis.cis455.xpathengine.occurrence.DomToOccurrence;
+import edu.upenn.cis.cis455.xpathengine.parser.XPath;
 import edu.upenn.cis.stormlite.OutputFieldsDeclarer;
 import edu.upenn.cis.stormlite.TopologyContext;
 import edu.upenn.cis.stormlite.bolt.IRichBolt;
@@ -8,7 +12,10 @@ import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 import edu.upenn.cis.stormlite.tuple.Values;
+import org.w3c.dom.Document;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -21,24 +28,53 @@ public class DomParserBolt extends StorageAccessorBolt {
 
     String executorId = UUID.randomUUID().toString();
 
+    Map<String ,String> xpathToChannel  = new HashMap<>();
+
     @Override
     public void cleanup() { }
 
     @Override
     public void execute(Tuple input) {
+        XPathEngine engine = XPathEngineFactory.getXPathEngine();
         String type = input.getStringByField(TYPE);
         String content = input.getStringByField(CONTENT);
         String date = input.getStringByField(DATE);
         String base = input.getStringByField(BASE);
+        System.out.println("got " + base + " of " + type);
         if (type.contains("xml")) {
             System.out.println("[🖨 XML: ] Received XML");
+            Document doc = null;
+            try {
+                doc = parseDoc(content);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            boolean[] results = engine.evaluate(doc);
+            String[] paths = engine.getPaths();
+            for (int i = 0; i < results.length; i++) {
+                if (results[i]) {
+                    getDB().addDocumentToChannel(xpathToChannel.get(paths[i]), base);
+                }
+            }
             getDB().addDocument(base, content, date);
+        }
+    }
+
+    private Document parseDoc(String rawDoc) throws Exception {
+        return DomToOccurrence.getDomNode(rawDoc);
+    }
+
+    private void populateChannels() {
+        List<Channel> channels = getDB().getAllChannels();
+        for (Channel c : channels) {
+            xpathToChannel.put(c.getXpath(), c.getName());
         }
     }
 
     @Override
     public void prepare(Map<String, String> stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
+        populateChannels();
     }
 
     @Override

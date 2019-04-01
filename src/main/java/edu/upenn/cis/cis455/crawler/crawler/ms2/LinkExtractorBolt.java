@@ -35,6 +35,7 @@ public class LinkExtractorBolt extends StorageAccessorBolt {
 
     @Override
     public void execute(Tuple input) {
+        SharedInfo.getInstance().declareWorking(true, this.getClass().getName(), executorId);
         String type = input.getStringByField(TYPE);
         String content = input.getStringByField(CONTENT);
         String date = input.getStringByField(DATE);
@@ -45,7 +46,9 @@ public class LinkExtractorBolt extends StorageAccessorBolt {
                 collector.emit(new Values<>(url));
             }
             getDB().addDocument(base, content, date);
+            SharedInfo.getInstance().declareDownloaded();
         }
+        SharedInfo.getInstance().declareWorking(false, this.getClass().getName(), executorId);
     }
 
     private List<String> parseDoc(String doc, String base) {

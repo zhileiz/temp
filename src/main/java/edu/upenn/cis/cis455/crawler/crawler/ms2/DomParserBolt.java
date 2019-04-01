@@ -12,6 +12,8 @@ import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 import edu.upenn.cis.stormlite.tuple.Values;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 
 import java.util.HashMap;
@@ -22,6 +24,9 @@ import java.util.UUID;
 import static edu.upenn.cis.cis455.crawler.crawler.ms2.StormConstants.FieldNames.*;
 
 public class DomParserBolt extends StorageAccessorBolt {
+
+    Logger logger = LogManager.getLogger(DomParserBolt.class);
+
     private OutputCollector collector;
 
     Fields schema = new Fields(EVENT);
@@ -35,14 +40,15 @@ public class DomParserBolt extends StorageAccessorBolt {
 
     @Override
     public void execute(Tuple input) {
+        SharedInfo.getInstance().declareWorking(true, this.getClass().getName(), executorId);
         XPathEngine engine = XPathEngineFactory.getXPathEngine();
         String type = input.getStringByField(TYPE);
         String content = input.getStringByField(CONTENT);
         String date = input.getStringByField(DATE);
         String base = input.getStringByField(BASE);
-        System.out.println("got " + base + " of " + type);
+        logger.debug("got " + base + " of " + type);
         if (type.contains("xml")) {
-            System.out.println("[🖨 XML: ] Received XML");
+            logger.debug("[🖨 XML: ] Received XML");
             Document doc = null;
             try {
                 doc = parseDoc(content);
@@ -57,7 +63,9 @@ public class DomParserBolt extends StorageAccessorBolt {
                 }
             }
             getDB().addDocument(base, content, date);
+            SharedInfo.getInstance().declareDownloaded();
         }
+        SharedInfo.getInstance().declareWorking(false, this.getClass().getName(), executorId);
     }
 
     private Document parseDoc(String rawDoc) throws Exception {

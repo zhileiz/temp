@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
  * limitations under the License.
  */
 public class TestWordCount {
-	static Logger log = LogManager.getLogger(TestWordCount.class);
+	static Logger logger = LogManager.getLogger(TestWordCount.class);
 
 	private static final String WORD_SPOUT = "WORD_SPOUT";
     private static final String COUNT_BOLT = "COUNT_BOLT";
@@ -67,7 +67,7 @@ public class TestWordCount {
 		try {
 			String str = mapper.writeValueAsString(topo);
 			
-			System.out.println("The StormLite topology is:\n" + str);
+			logger.debug("The StormLite topology is:\n" + str);
 		} catch (JsonProcessingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

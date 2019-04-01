@@ -1,23 +1,14 @@
 package edu.upenn.cis.cis455.crawler.utils;
 
 
-import edu.upenn.cis.cis455.crawler.Crawler;
 import edu.upenn.cis.cis455.crawler.info.RequestObj;
 import edu.upenn.cis.cis455.crawler.info.ResponseObj;
 import edu.upenn.cis.cis455.crawler.info.RobotsTxtInfo;
 import edu.upenn.cis.cis455.crawler.info.URLInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
 
 public class CrawlerUtils {
 

@@ -16,6 +16,8 @@ import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 import edu.upenn.cis.stormlite.tuple.Values;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +27,8 @@ import static edu.upenn.cis.cis455.crawler.crawler.ms2.StormConstants.HTTPHeader
 import static edu.upenn.cis.cis455.crawler.crawler.ms2.StormConstants.HTTPMethods.*;
 
 public class DocumentFetcherBolt extends StorageAccessorBolt {
+
+    Logger logger = LogManager.getLogger(DocumentFetcherBolt.class);
 
     private OutputCollector collector;
 
@@ -45,18 +49,20 @@ public class DocumentFetcherBolt extends StorageAccessorBolt {
 
     @Override
     public void execute(Tuple input) {
+        SharedInfo.getInstance().declareWorking(true, this.getClass().getName(), executorId);
         String url = input.getStringByField(URL);
-        System.out.println("Crawling " + url);
+        logger.debug("Crawling " + url);
         if (shouldGet(url)) {
             RawDocument result = doGet(url);
             collector.emit(new Values<>(result.type, result.content, result.date, url));
         }
+        SharedInfo.getInstance().declareWorking(false, this.getClass().getName(), executorId);
     }
 
     private boolean shouldGet(String url) {
         ResponseObj res = doHead(url, getSavedDate(url));
         if (res.getResponseCode() >= 300) {
-            System.out.println("[🗓 NO CHANGE: ] document wasn't modified.");
+            logger.debug("[🗓 NO CHANGE: ] document wasn't modified.");
             return false;
         }
         String contentType = res.getOrDefault(HTTP_CONTENT_TYPE, "");
@@ -89,7 +95,6 @@ public class DocumentFetcherBolt extends StorageAccessorBolt {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println(contentType);
         return contentType != null && (contentType.startsWith("text") || contentType.contains("xml"));
     }
 

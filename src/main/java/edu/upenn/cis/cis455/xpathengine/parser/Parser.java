@@ -1,5 +1,8 @@
 package edu.upenn.cis.cis455.xpathengine.parser;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.text.ParseException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,6 +17,8 @@ import java.util.regex.PatternSyntaxException;
 
 public class Parser {
 
+    Logger logger = LogManager.getLogger(Parser.class);
+
     private String d_input; // Holds the rest of the input.
     private int d_currOffset; // Current offset into the original input.
 
@@ -22,7 +27,7 @@ public class Parser {
         try {
             d_nodenamePattern = Pattern.compile("[a-zA-Z]+");
         } catch (PatternSyntaxException e) {
-            System.out.println(e.getMessage());
+            logger.debug(e.getMessage());
             System.exit(-1);
         }
     }

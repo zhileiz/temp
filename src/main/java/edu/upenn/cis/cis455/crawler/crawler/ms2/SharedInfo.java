@@ -1,18 +1,20 @@
 package edu.upenn.cis.cis455.crawler.crawler.ms2;
 
-import edu.upenn.cis.cis455.crawler.CrawlerMS2;
+import edu.upenn.cis.cis455.crawler.Crawler;
 import edu.upenn.cis.cis455.crawler.info.RobotsTxtInfo;
 import edu.upenn.cis.cis455.crawler.info.URLInfo;
-import edu.upenn.cis.cis455.crawler.utils.Constants;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static edu.upenn.cis.cis455.crawler.crawler.ms2.StormConstants.Crawler.*;
 
 public class SharedInfo {
+
+    Logger logger = LogManager.getLogger(LinkFilterBolt.class);
 
     private static SharedInfo instance;
 
@@ -27,9 +29,11 @@ public class SharedInfo {
     private Map<String, RobotsTxtInfo> robotsInfo;
     private Map<String, LocalDateTime> lastVisitedTimes;
 
-    private CrawlerMS2 master;
+    private Crawler master;
     private int maxContentLength;
-    private int maxDocumentCount;
+    private Integer maxDocumentCount = 0;
+    private Integer activeWorkersCount = 0;
+    private Integer countDown = 1000;
 
     private SharedInfo() {
         frontierQueue = new ArrayDeque<>();
@@ -37,8 +41,16 @@ public class SharedInfo {
         lastVisitedTimes = new HashMap<>();
     }
 
-    public void setMaster(CrawlerMS2 master) {
+    public void setMaster(Crawler master) {
         this.master = master;
+    }
+
+    public void setMaxDocumentCount(int max) {
+        this.maxDocumentCount = max;
+    }
+
+    public void setMaxContentLength(int max) {
+        this.maxContentLength = max;
     }
 
     public void addUrl(String url) {
@@ -49,14 +61,25 @@ public class SharedInfo {
     }
 
     public String pullUrl() {
-        synchronized (frontierQueue) {
-            if (frontierQueue.isEmpty()) { return null; }
-            URLInfo info = frontierQueue.poll();
-            if (deferCrawl(info.getHostName())) {
-                frontierQueue.add(info);
+        if (shouldExit()) {
+            if (countDown > 0) {
+                countDown --;
                 return null;
-            } else {
-                return info.getRawUrl();
+            }
+            master.shutDown();
+            return null;
+        } else {
+            synchronized (frontierQueue) {
+                if (frontierQueue.isEmpty()) {
+                    return null;
+                }
+                URLInfo info = frontierQueue.poll();
+                if (deferCrawl(info.getHostName())) {
+                    frontierQueue.add(info);
+                    return null;
+                } else {
+                    return info.getRawUrl();
+                }
             }
         }
     }
@@ -108,6 +131,32 @@ public class SharedInfo {
     public void addRobotInfo(String host, RobotsTxtInfo info) {
         synchronized (robotsInfo) {
             robotsInfo.put(host, info);
+        }
+    }
+
+    private boolean shouldExit() {
+        synchronized (frontierQueue) {
+            synchronized (activeWorkersCount) {
+                return (frontierQueue.isEmpty() && activeWorkersCount == 0) || maxDocumentCount < 1;
+            }
+        }
+    }
+
+    public void declareWorking(boolean isWorking, String worker, String uid) {
+        synchronized (activeWorkersCount) {
+            if (isWorking) {
+                logger.debug("[👨‍💻 working: " + worker + "] " + activeWorkersCount + " | " + uid );
+                activeWorkersCount++;
+            } else {
+                logger.debug("[🚽 rest: : " + worker + "] " + activeWorkersCount + " | " + uid);
+                activeWorkersCount--;
+            }
+        }
+    }
+
+    public void declareDownloaded() {
+        synchronized (maxDocumentCount) {
+            maxDocumentCount--;
         }
     }
 

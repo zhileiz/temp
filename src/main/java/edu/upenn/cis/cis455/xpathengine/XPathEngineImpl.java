@@ -4,6 +4,8 @@ import edu.upenn.cis.cis455.model.OccurrenceEvent;
 import edu.upenn.cis.cis455.xpathengine.occurrence.DomToOccurrence;
 import edu.upenn.cis.cis455.xpathengine.parser.Parser;
 import edu.upenn.cis.cis455.xpathengine.parser.XPath;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -13,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class XPathEngineImpl implements XPathEngine {
+
+    Logger logger = LogManager.getLogger(XPathEngineImpl.class);
 
     private XPathMatcher matcher;
     private String[] paths;
@@ -30,7 +34,7 @@ public class XPathEngineImpl implements XPathEngine {
                 XPath path = new Parser(s).parse();
                 xpaths.add(path);
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                logger.debug(e.getMessage());
             }
         }
         matcher.setXpaths(xpaths);

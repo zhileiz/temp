@@ -178,7 +178,7 @@ public class BerkeleyStorageImpl implements StorageInterface {
                 data.addFile(docName);
                 channels.put(key, data);
             });
-            System.out.println("[💾 Match Saved: ]" + url + " -> " + cName);
+            logger.debug("[💾 Match Saved: ]" + url + " -> " + cName);
         } catch (Exception e) {
             e.printStackTrace();
         }

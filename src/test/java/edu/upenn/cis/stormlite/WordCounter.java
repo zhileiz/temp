@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  */
 
 public class WordCounter implements IRichBolt {
-	static Logger log = LogManager.getLogger(WordCounter.class);
+	static Logger logger = LogManager.getLogger(WordCounter.class);
 	
 	Fields schema = new Fields("word", "count");
 	
@@ -85,7 +85,7 @@ public class WordCounter implements IRichBolt {
     public void execute(Tuple input) {
         String word = input.getStringByField("word");
         int count;
-        log.debug(getExecutorId() + " received " + word);
+        logger.debug(getExecutorId() + " received " + word);
         if (wordCounter.containsKey(word)) {
             count = wordCounter.get(word) + 1;
             wordCounter.put(word, wordCounter.get(word) + 1);
@@ -102,7 +102,7 @@ public class WordCounter implements IRichBolt {
      */
     @Override
     public void cleanup() {
-    	System.out.println("WordCount executor " + getExecutorId() + " has words: " + wordCounter.keySet());
+    	logger.debug("WordCount executor " + getExecutorId() + " has words: " + wordCounter.keySet());
 
     	wordCounter.clear();
     }

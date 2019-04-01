@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
  *
  */
 public class PrintBolt implements IRichBolt {
-	static Logger log = LogManager.getLogger(PrintBolt.class);
+	static Logger logger = LogManager.getLogger(PrintBolt.class);
 	
 	Fields myFields = new Fields();
 
@@ -40,7 +40,7 @@ public class PrintBolt implements IRichBolt {
 
 	@Override
 	public void execute(Tuple input) {
-		System.out.println(getExecutorId() + ": " + input.toString());
+		logger.debug(getExecutorId() + ": " + input.toString());
 	}
 
 	@Override

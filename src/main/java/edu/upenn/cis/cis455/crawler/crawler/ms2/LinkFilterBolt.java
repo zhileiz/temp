@@ -14,6 +14,8 @@ import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 import edu.upenn.cis.stormlite.tuple.Values;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -23,6 +25,9 @@ import static edu.upenn.cis.cis455.crawler.crawler.ms2.StormConstants.Crawler.*;
 import static edu.upenn.cis.cis455.crawler.crawler.ms2.StormConstants.FieldNames.*;
 
 public class LinkFilterBolt implements IRichBolt {
+
+    Logger logger = LogManager.getLogger(LinkFilterBolt.class);
+
     private OutputCollector collector;
 
     Fields schema = new Fields(FRONTIER);
@@ -34,13 +39,15 @@ public class LinkFilterBolt implements IRichBolt {
 
     @Override
     public void execute(Tuple input) {
+        SharedInfo.getInstance().declareWorking(true, this.getClass().getName(), executorId);
         String url = input.getStringByField(LINK);
         if (isOKtoCrawl(url)) {
-            System.out.println("[✅ YES: ]" + url);
+            logger.debug("[✅ YES: ]" + url);
             SharedInfo.getInstance().addUrl(url);
         } else {
-            System.out.println("[❌ DONT: ]" + url);
+            logger.debug("[❌ DONT: ]" + url);
         }
+        SharedInfo.getInstance().declareWorking(false, this.getClass().getName(), executorId);
     }
 
     public boolean isOKtoCrawl(String url) {
@@ -82,7 +89,7 @@ public class LinkFilterBolt implements IRichBolt {
         RequestObj req = new RequestObj(robotURL, Constants.HTTPMethods.GET);
         ResponseObj res = CrawlerUtils.makeRequest(req);
         if (res.getResponseCode() >= 400) {
-            System.out.println("[⚠️ NO ROBOT: ] Failed to fetch ROBOT.txt for " + host);
+            logger.debug("[⚠️ NO ROBOT: ] Failed to fetch ROBOT.txt for " + host);
             return new RobotsTxtInfo();
         }
         return CrawlerUtils.parseRobotsTxt(res.getContent());

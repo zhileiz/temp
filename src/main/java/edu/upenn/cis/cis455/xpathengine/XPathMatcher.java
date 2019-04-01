@@ -1,6 +1,8 @@
 package edu.upenn.cis.cis455.xpathengine;
 
 import edu.upenn.cis.cis455.xpathengine.parser.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -10,6 +12,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class XPathMatcher {
+
+    Logger logger = LogManager.getLogger(XPathMatcher.class);
     List<XPath> xpaths;
     Document doc;
 
@@ -32,51 +36,56 @@ public class XPathMatcher {
         List<Boolean> result = new LinkedList<Boolean>();
         Element node = doc.getDocumentElement();
         for (XPath xp : xpaths) {
-            System.out.println(xp.toString());
+            logger.debug(xp.toString());
             result.add(matchStep(xp.getSteps(), node, 0));
         }
         return result;
     }
 
-    private boolean matchStep(List<Step> steps, Element node, int checkInx) {
-        if (steps.size() <= checkInx) { return true; }
-        Step s = steps.get(checkInx);
-        System.out.println(s.getNodename() + "/" +node.getTagName() + "/" +checkInx);
-        if (!node.getTagName().equals(s.getNodename())) { return false; }
-        if (s.getEqualTest() != null) {
+    public boolean passEqualTest(Step s, Element node) {
+        NodeList nl = node.getChildNodes();
+        for (int i = 0; i < nl.getLength(); i++) {
+            if (nl.item(i).getNodeType() == Node.TEXT_NODE) {
+                String content = nl.item(i).getTextContent().toLowerCase();
+                String stepValue = s.getEqualTest().getSubstring().toLowerCase();
+                if (content.equals(stepValue)) { return true; }
+            }
+        }
+        return false;
+    }
+
+    public boolean passAllContainTests(Step s, Element node) {
+        if (s.getContainTests().size() == 0) { return true; }
+        for (Test t : s.getContainTests()) {
             boolean passed = false;
             NodeList nl = node.getChildNodes();
-            for (int i = 0; i < nl.getLength(); i += 1) {
+            for (int i = 0; i < nl.getLength(); i++) {
                 if (nl.item(i).getNodeType() == Node.TEXT_NODE) {
-                    if (nl.item(i).getTextContent().toLowerCase().equals(s.getEqualTest().getSubstring().toLowerCase())) {
-                        passed = true;
-                    }
+                    String content = nl.item(i).getTextContent().toLowerCase();
+                    String testVal = t.getSubstring().toLowerCase();
+                    if (content.contains(testVal)) { passed = true; break; }
                 }
             }
             if (!passed) { return false; }
         }
-        if (s.getContainTests().size() != 0) {
-            for (Test t : s.getContainTests()) {
-                boolean passed = false;
-                NodeList nl = node.getChildNodes();
-                for (int i = 0; i < nl.getLength(); i += 1) {
-                    if (nl.item(i).getNodeType() == Node.TEXT_NODE) {
-                        if (nl.item(i).getTextContent().toLowerCase().contains(t.getSubstring().toLowerCase())) {
-                            passed = true;
-                        }
-                    }
-                }
-                if (!passed) { return false; }
-            }
-        }
+        return true;
+    }
+
+    private boolean matchStep(List<Step> steps, Element node, int checkInx) {
+        if (steps.size() <= checkInx) { return true; }
+        Step s = steps.get(checkInx);
+        if (!node.getTagName().equals(s.getNodename())) { return false; }
+        if (s.getEqualTest() != null && !passEqualTest(s, node)) { return false; }
+        if (!passAllContainTests(s, node)) { return false; }
         NodeList children = node.getChildNodes();
-        int count =  children.getLength();
         boolean existsElement = false;
-        for (int i = 0; i < count; i += 1) {
+        for (int i = 0; i < children.getLength(); i ++) {
             Node child = children.item(i);
             if (child.getNodeType() == Node.ELEMENT_NODE) {
                 existsElement = true;
-                if (matchStep(steps, (Element) child, checkInx + 1)) return true;
+                if (matchStep(steps, (Element) child, checkInx + 1)) {
+                    return true;
+                }
             }
         }
         return !existsElement && steps.size() == checkInx + 1;
